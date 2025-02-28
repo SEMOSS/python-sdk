@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=40.8.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-server-sdk"
+version = "0.0.18"
+description = "Utility package to connect to AI Server instances."
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+    { name = "Thomas Trankle"},
+    { name = "Maher Khalil"},
+    { name = "Ryan Weiler"}
+]
+dependencies = [
+    "requests", 
+    "pandas",
+    "jsonpickle",
+]
+
+requires-python = ">= 3.10"
+classifiers = [
+  "Typing :: Typed",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Operating System :: OS Independent",
+  "Operating System :: POSIX",
+  "Operating System :: MacOS",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: Microsoft :: Windows",
+  "License :: OSI Approved :: MIT License",
+]
+
+[project.optional-dependencies]
+full = [
+    "langchain",
+    "langchain-community",
+]
+
+[project.urls]
+Homepage = "https://github.com/Deloitte-Default/cfgai-py-ai-server"
+Repository = "https://github.com/Deloitte-Default/cfgai-py-ai-server"
+
+[tool.ruff]
+line-length = 120
+select = [
+    "E",  # Pycodestyle errors
+    "F",  # Pyflakes errors
+    "W",  # Pycodestyle warnings
+]
+ignore = ["E501"] # Ignore line length errors  

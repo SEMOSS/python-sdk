@@ -1,0 +1,9 @@
+requests
+pandas
+jsonpickle
+langchain==0.2.1
+langchain_community==0.2.1
+python-dotenv
+openai
+python-dotenv
+
