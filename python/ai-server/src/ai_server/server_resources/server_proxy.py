@@ -20,7 +20,9 @@ class ServerProxy:
         from ai_server.server_resources.server_client import ServerClient
 
         self.server = ServerClient.da_server
-        assert self.server is not None, "Please authenticate using your access and secret keys"
+        assert (
+            self.server is not None
+        ), "Please authenticate using your access and secret keys"
         logger.info("Server is set")
 
     def get_next_epoc(self) -> str:
@@ -67,7 +69,9 @@ class ServerProxy:
             "methodName": method_name,
             "payload": method_args,
             "payloadClassNames": method_arg_types,
-            "insightId": insight_id if insight_id is not None else self.server.cur_insight,
+            "insightId": (
+                insight_id if insight_id is not None else self.server.cur_insight
+            ),
             "operation": "ENGINE",
         }
 

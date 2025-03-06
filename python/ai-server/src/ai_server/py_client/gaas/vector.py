@@ -50,7 +50,7 @@ class VectorEngine(ServerProxy):
         )
 
         pixel = (
-            'CreateEmbeddingsFromDocuments=(engine="'
+            'CreateEmbeddingsFromDocuments(engine="'
             + self.engine_id
             + '", filePaths='
             + json.dumps(insight_files)

@@ -71,7 +71,9 @@ class ServerClient:
         useUserAccessKey = (self.access_key is not None and self.access_key != "") and (
             self.secret_key is not None and self.secret_key != ""
         )
-        useBearerToken = (self.bearer_token is not None and self.bearer_token != "") and (
+        useBearerToken = (
+            self.bearer_token is not None and self.bearer_token != ""
+        ) and (
             self.bearer_token_provider is not None and self.bearer_token_provider != ""
         )
 
@@ -145,7 +147,10 @@ class ServerClient:
 
         Store the cookies to be used for other api calls after authentication
         """
-        headers = {"Authorization": f"Bearer {self.bearer_token}", "Bearer-Provider": self.bearer_token_provider}
+        headers = {
+            "Authorization": f"Bearer {self.bearer_token}",
+            "Bearer-Provider": self.bearer_token_provider,
+        }
         self.auth_headers: Dict = headers.copy()
         logger.info(self.auth_headers)
 
@@ -165,7 +170,8 @@ class ServerClient:
         if "errorMessage" in json_response:
             if json_response["errorMessage"] == "null principal":
                 raise AuthenticationError(
-                    url + f" USERID = INVALID could not login using user with bearer token '{self.bearer_token}'"
+                    url
+                    + f" USERID = INVALID could not login using user with bearer token '{self.bearer_token}'"
                 )
 
             raise AuthenticationError(json_response["errorMessage"])
@@ -209,7 +215,12 @@ class ServerClient:
 
         return self.cur_insight
 
-    def run_pixel(self, payload: str, insight_id: Optional[str] = None, full_response: Optional[bool] = False):
+    def run_pixel(
+        self,
+        payload: str,
+        insight_id: Optional[str] = None,
+        full_response: Optional[bool] = False,
+    ):
         """
         Send a pixel payload to the platforms /api/engine/runPixel endpoint.
 
@@ -237,7 +248,9 @@ class ServerClient:
             insight_id = self.cur_insight
             if insight_id is None:
                 # the insight_id is still null
-                logger.info("insight_id and self.cur_insight are both undefined. Creating new insight")
+                logger.info(
+                    "insight_id and self.cur_insight are both undefined. Creating new insight"
+                )
                 self.cur_insight = self.make_new_insight()
                 insight_id = self.cur_insight
 
@@ -246,7 +259,9 @@ class ServerClient:
         pixel_payload = {"expression": payload, "insightId": insight_id}
 
         api_url = "/engine/runPixel"
-        response = requests.post(self.main_url + api_url, cookies=self.cookies, data=pixel_payload)
+        response = requests.post(
+            self.main_url + api_url, cookies=self.cookies, data=pixel_payload
+        )
 
         response_dict = response.json()
         logger.info(response_dict)
@@ -259,7 +274,10 @@ class ServerClient:
             return self.get_pixel_output(response_dict)
 
     def run_pixel_separate_thread(
-        self, payload: str, insight_id: Optional[str] = None, full_response: Optional[bool] = False
+        self,
+        payload: str,
+        insight_id: Optional[str] = None,
+        full_response: Optional[bool] = False,
     ) -> str:
         """
         This is really a run_pixel in a separate thread.
@@ -315,7 +333,9 @@ class ServerClient:
         # keep track of when the streams start coming since it could be delayed
         started_streaming = False
         while True:
-            response = requests.post(partial_endpoint, cookies=cookies, data=payload).json()
+            response = requests.post(
+                partial_endpoint, cookies=cookies, data=payload
+            ).json()
             msg = response.get("message")
             msg_length = len(msg) if msg is not None else 0
 
@@ -423,7 +443,9 @@ class ServerClient:
             else:
                 self.cur_insight = None
 
-    def import_data_product(self, project_id: str, insight_id: str, sql: str) -> Union[pd.DataFrame, None]:
+    def import_data_product(
+        self, project_id: str, insight_id: str, sql: str
+    ) -> Union[pd.DataFrame, None]:
         """
         Accesses data within a saved insight (data product) via a REST API.
 
@@ -438,7 +460,14 @@ class ServerClient:
         Returns:
           `pd.DataFrame` Pandas Dataframe based on the SQL statement passed in
         """
-        base_url = self.main_url + "/project-" + project_id + "/jdbc_json?insightId=" + insight_id + "&open=true&sql="
+        base_url = (
+            self.main_url
+            + "/project-"
+            + project_id
+            + "/jdbc_json?insightId="
+            + insight_id
+            + "&open=true&sql="
+        )
 
         dataProductUrl = base_url + sql
         response = requests.get(dataProductUrl, cookies=self.cookies).json()
@@ -510,7 +539,9 @@ class ServerClient:
         insight_file_paths = []
         for filepath in files:
             with open(filepath, "rb") as fobj:
-                response = requests.post(url, cookies=self.cookies, files={"file": fobj})
+                response = requests.post(
+                    url, cookies=self.cookies, files={"file": fobj}
+                )
                 insight_file_paths.append(response.json()[0]["fileName"])
 
         return insight_file_paths

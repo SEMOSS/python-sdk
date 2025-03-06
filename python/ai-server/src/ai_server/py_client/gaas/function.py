@@ -24,9 +24,13 @@ class FunctionEngine(ServerProxy):
         if insight_id is None:
             insight_id = self.insight_id
 
-        pixel = f'ExecuteFunctionEngine(engine = "{self.engine_id}", map=[{parameterMap}]);'
+        pixel = (
+            f'ExecuteFunctionEngine(engine = "{self.engine_id}", map=[{parameterMap}]);'
+        )
 
-        output_payload_message = self.server.run_pixel(payload=pixel, insight_id=insight_id, full_response=True)
+        output_payload_message = self.server.run_pixel(
+            payload=pixel, insight_id=insight_id, full_response=True
+        )
 
         if output_payload_message["pixelReturn"][0]["operationType"] == ["ERROR"]:
             raise RuntimeError(output_payload_message["pixelReturn"][0]["output"])

@@ -45,12 +45,18 @@ class ModelEngine(ServerProxy):
         if insight_id is None:
             insight_id = self.insight_id
 
-        optionalContext = f',context=["<encode>{context}</encode>"]' if (context is not None) else ""
-        optionalParamDict = f",paramValues=[{param_dict}]" if (param_dict is not None) else ""
+        optionalContext = (
+            f',context=["<encode>{context}</encode>"]' if (context is not None) else ""
+        )
+        optionalParamDict = (
+            f",paramValues=[{param_dict}]" if (param_dict is not None) else ""
+        )
 
         pixel = f'LLM(engine="{self.engine_id}", command="<encode>{question}</encode>"{optionalContext}{optionalParamDict});'
 
-        output_payload_message = self.server.run_pixel(payload=pixel, insight_id=insight_id, full_response=True)
+        output_payload_message = self.server.run_pixel(
+            payload=pixel, insight_id=insight_id, full_response=True
+        )
 
         if output_payload_message["pixelReturn"][0]["operationType"] == ["ERROR"]:
             raise RuntimeError(output_payload_message["pixelReturn"][0]["output"])
@@ -89,13 +95,19 @@ class ModelEngine(ServerProxy):
         if insight_id is None:
             insight_id = self.insight_id
 
-        optionalContext = f',context=["<encode>{context}</encode>"]' if (context is not None) else ""
-        optionalParamDict = f",paramValues=[{param_dict}]" if (param_dict is not None) else ""
+        optionalContext = (
+            f',context=["<encode>{context}</encode>"]' if (context is not None) else ""
+        )
+        optionalParamDict = (
+            f",paramValues=[{param_dict}]" if (param_dict is not None) else ""
+        )
 
         pixel = f'LLM(engine="{self.engine_id}", command="<encode>{question}</encode>"{optionalContext}{optionalParamDict});'
 
         for message in self.server.get_partial_responses(
-            self.server.run_pixel_separate_thread(payload=pixel, insight_id=insight_id, full_response=True)
+            self.server.run_pixel_separate_thread(
+                payload=pixel, insight_id=insight_id, full_response=True
+            )
         ):
             yield message
 
@@ -131,11 +143,15 @@ class ModelEngine(ServerProxy):
 
         assert self.server is not None
 
-        optionalParamDict = f",paramValues=[{param_dict}]" if (param_dict is not None) else ""
+        optionalParamDict = (
+            f",paramValues=[{param_dict}]" if (param_dict is not None) else ""
+        )
 
         pixel = f'Embeddings(engine="{self.engine_id}", values={strings_to_embed}{optionalParamDict});'
 
-        output_payload_message = self.server.run_pixel(payload=pixel, insight_id=insight_id, full_response=True)
+        output_payload_message = self.server.run_pixel(
+            payload=pixel, insight_id=insight_id, full_response=True
+        )
 
         if output_payload_message["pixelReturn"][0]["operationType"] == ["ERROR"]:
             raise RuntimeError(output_payload_message["pixelReturn"][0]["output"])
@@ -249,8 +265,7 @@ class ModelEngine(ServerProxy):
                         convert_message_to_dict,
                     )
 
-                    full_prompt = [
-                        convert_message_to_dict(m) for m in messages]
+                    full_prompt = [convert_message_to_dict(m) for m in messages]
                     return full_prompt
                 else:
                     full_prompt: str

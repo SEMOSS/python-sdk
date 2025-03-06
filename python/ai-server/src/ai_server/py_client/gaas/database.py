@@ -73,7 +73,9 @@ class DatabaseEngine(ServerProxy):
             else:
                 return open(fileLoc, "r").read()
 
-    def insertData(self, query: str, insight_id: Optional[str] = None, commit: bool = True) -> None:
+    def insertData(
+        self, query: str, insight_id: Optional[str] = None, commit: bool = True
+    ) -> None:
         """
         Connect to a database an execute SQL against it to insert data
 
@@ -84,7 +86,9 @@ class DatabaseEngine(ServerProxy):
         """
         return self.runQuery(query, insight_id, commit)
 
-    def updateData(self, query: str, insight_id: Optional[str] = None, commit: bool = True) -> None:
+    def updateData(
+        self, query: str, insight_id: Optional[str] = None, commit: bool = True
+    ) -> None:
         """
         Connect to a database an execute SQL against it to update data
 
@@ -95,7 +99,9 @@ class DatabaseEngine(ServerProxy):
         """
         return self.runQuery(query, insight_id, commit)
 
-    def removeData(self, query: str, insight_id: Optional[str] = None, commit: bool = True) -> None:
+    def removeData(
+        self, query: str, insight_id: Optional[str] = None, commit: bool = True
+    ) -> None:
         """
         Connect to a database an execute SQL against it to delete/remove data
 
@@ -106,7 +112,9 @@ class DatabaseEngine(ServerProxy):
         """
         return self.runQuery(query, insight_id, commit)
 
-    def runQuery(self, query: str, insight_id: Optional[str] = None, commit: bool = True):
+    def runQuery(
+        self, query: str, insight_id: Optional[str] = None, commit: bool = True
+    ):
         """
         This will execute the ExecQuery() reactor for a database
 
@@ -120,11 +128,11 @@ class DatabaseEngine(ServerProxy):
 
         commitStr = "true" if commit else "false"
 
-        pixel = (
-            f'Database(database = "{self.engine_id}")|Query("<encode>{query}</encode>")|ExecQuery(commit={commitStr});'
-        )
+        pixel = f'Database(database = "{self.engine_id}")|Query("<encode>{query}</encode>")|ExecQuery(commit={commitStr});'
 
-        output_payload_message = self.server.run_pixel(payload=pixel, insight_id=insight_id, full_response=True)
+        output_payload_message = self.server.run_pixel(
+            payload=pixel, insight_id=insight_id, full_response=True
+        )
 
         if output_payload_message["pixelReturn"][0]["operationType"] == ["ERROR"]:
             raise RuntimeError(output_payload_message["pixelReturn"][0]["output"])

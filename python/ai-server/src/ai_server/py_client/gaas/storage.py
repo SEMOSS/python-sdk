@@ -18,7 +18,9 @@ class StorageEngine(ServerProxy):
         if insight_id is None:
             insight_id = self.insight_id
 
-        output_payload_message = self.server.run_pixel(payload=pixel, insight_id=insight_id, full_response=True)
+        output_payload_message = self.server.run_pixel(
+            payload=pixel, insight_id=insight_id, full_response=True
+        )
 
         if output_payload_message["pixelReturn"][0]["operationType"] == ["ERROR"]:
             raise RuntimeError(output_payload_message["pixelReturn"][0]["output"])
@@ -36,7 +38,9 @@ class StorageEngine(ServerProxy):
         Returns:
             list: list of files/folders in the given path of the storage engine
         """
-        pixel = f'Storage("{self.engine_id}")|ListStoragePath(storagePath="{storagePath}");'
+        pixel = (
+            f'Storage("{self.engine_id}")|ListStoragePath(storagePath="{storagePath}");'
+        )
         return self.__execute_pixel(pixel, insight_id)
 
     def listDetails(self, storagePath: str, insight_id: Optional[str] = None):
@@ -81,7 +85,11 @@ class StorageEngine(ServerProxy):
         return self.__execute_pixel(pixel, insight_id)
 
     def syncStorageToLocal(
-        self, storagePath: str, localPath: str, space: Optional[str] = None, insight_id: Optional[str] = None
+        self,
+        storagePath: str,
+        localPath: str,
+        space: Optional[str] = None,
+        insight_id: Optional[str] = None,
     ):
         """
         This method is responsible for syncing from cloud storage into the insight/project/user space
@@ -152,7 +160,10 @@ class StorageEngine(ServerProxy):
         return self.__execute_pixel(pixel, insight_id)
 
     def deleteFromStorage(
-        self, storagePath: str, leaveFolderStructure: Optional[bool] = False, insight_id: Optional[str] = None
+        self,
+        storagePath: str,
+        leaveFolderStructure: Optional[bool] = False,
+        insight_id: Optional[str] = None,
     ):
         """
         This method is responsible for deleting from a storage
