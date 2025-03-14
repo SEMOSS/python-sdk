@@ -161,6 +161,18 @@ class ModelEngine(ServerProxy):
     def get_model_engine_id(self) -> str:
         return self.engine_id
 
+    def get_model_type(self) -> str:
+
+        insight_id = self.insight_id
+        pixel = f'GetModelAPI(model="{self.engine_id}");'
+
+        output_payload_message = self.server.run_pixel(
+            payload=pixel, insight_id=insight_id, full_response=True
+        )
+
+       #model_type = = output_payload_message.get('pixelReturn', [{}])[0].get('output', '')
+        return output_payload_message["pixelReturn"][0]["output"]
+
     def to_langchain_embedder(self):
         """Transform the model engine into a langchain `Embeddings`object so that it can be used with langchain code"""
 
@@ -204,7 +216,7 @@ class ModelEngine(ServerProxy):
                 data = {
                     "engine_id": model_engine.get_model_engine_id(),
                     "model_engine": model_engine,
-                    "model_type": model_engine.get_model_type()[0],
+                    "model_type": model_engine.get_model_type(),
                 }
 
                 super().__init__(**data)
@@ -226,7 +238,7 @@ class ModelEngine(ServerProxy):
                     question="", param_dict={**kwargs, **{"full_prompt": full_prompt}}
                 )
 
-                return self._create_chat_result(response=response[0])
+                return self._create_chat_result(response=response)
 
             def _create_chat_result(self, response: Dict[str, Any]) -> ChatResult:
                 generations = []
