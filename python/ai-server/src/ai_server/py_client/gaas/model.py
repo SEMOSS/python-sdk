@@ -170,7 +170,6 @@ class ModelEngine(ServerProxy):
             payload=pixel, insight_id=insight_id, full_response=True
         )
 
-       #model_type = = output_payload_message.get('pixelReturn', [{}])[0].get('output', '')
         return output_payload_message["pixelReturn"][0]["output"]
 
     def to_langchain_embedder(self):
