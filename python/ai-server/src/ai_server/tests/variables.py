@@ -10,36 +10,29 @@ else:
 
 # SWAP THESE WITH YOUR OWN VALUES IF TESTING LOCALLY
 local_creds = {
-    'SECRET_KEY': os.getenv('SECRET_KEY'),
-    'ACCESS_KEY': os.getenv('ACCESS_KEY'),
-    'ENDPOINT': os.getenv('LOCAL_ENDPOINT'),
-    'LLM_CHAT_ENGINE_ID': os.getenv('LOCAL_LLM_CHAT_ENGINE_ID'),
-    'LLM_EMBEDDING_ENGINE_ID': os.getenv('LOCAL_LLM_EMBEDDING_ENGINE_ID'), # this is chat gpt 4o that was given access to me from ryan
-    'VECTOR_ENGINE_ID': os.getenv('LOCAL_VECTOR_ENGINE_ID'), # I dont have access to this one either, now i do i think
-    'DATABASE_ENGINE_ID': os.getenv('LOCAL_DATABASE_ENGINE_ID'), #I added this one
-    'STORAGE_ENGINE_ID': os.getenv('LOCAL_STORAGE_ENGINE_ID'), #ryan said to make this non
+    'SECRET_KEY': os.getenv('LOCAL_SECRET_KEY'),
+    'ACCESS_KEY': os.getenv('LOCAL_ACCESS_KEY'),
+    'ENDPOINT': "http://localhost:9090/Monolith_Dev/api",
+    'LLM_CHAT_ENGINE_ID': '4801422a-5c62-421e-a00c-05c6a9e15de8',
+    'LLM_EMBEDDING_ENGINE_ID': '',
+    'VECTOR_ENGINE_ID': 'dae9096d-1891-4077-b8bc-63ecdce08e14',
+    'DATABASE_ENGINE_ID': '515721c0-340f-42fa-b3ff-138882b8b75b'
 }
 
 # Don't change these values unless there are problems ie. permissions, etc.
 dev_creds = {
     'SECRET_KEY': os.getenv('DEV_SECRET_KEY'),
     'ACCESS_KEY': os.getenv('DEV_ACCESS_KEY'),
-    'ENDPOINT': os.getenv('DEV_ENDPOINT'),
-    'LLM_CHAT_ENGINE_ID': os.getenv('DEV_LLM_CHAT_ENGINE_ID'),
-    'LLM_EMBEDDING_ENGINE_ID': os.getenv('DEV_LLM_EMBEDDING_ENGINE_ID'),
-    'VECTOR_ENGINE_ID': os.getenv('DEV_VECTOR_ENGINE_ID'), #now I have access, this is different than the one i started with
-    'DATABASE_ENGINE_ID': os.getenv('DEV_DATABASE_ENGINE_ID'),
-    'STORAGE_ENGINE_ID': os.getenv('DEV_STORAGE_ENGINE_ID'),
+    'ENDPOINT': "https://workshop.cfg.deloitte.com/cfg-ai-dev/Monolith/api",
+    'LLM_CHAT_ENGINE_ID': '4801422a-5c62-421e-a00c-05c6a9e15de8',
+    'LLM_EMBEDDING_ENGINE_ID': 'e4449559-bcff-4941-ae72-0e3f18e06660',
+    'VECTOR_ENGINE_ID': '1222b449-1bc6-4358-9398-1ed828e4f26a',
+    'DATABASE_ENGINE_ID': '950eb187-e352-444d-ad6a-6476ed9390af',
+    'STORAGE_ENGINE_ID': '2d905aa3-b703-4c98-8133-5bcaefddac1e',
 }
 
-# Dynamically select the credentials dictionary
-active_creds = os.getenv('ACTIVE_CREDS')
-if active_creds == 'local_creds':
-    active_creds = local_creds
-elif os.getenv('ACTIVE_CREDS') == 'dev_creds':
-    active_creds = dev_creds
-else:
-    raise ValueError(f"Invalid value for ACTIVE_CREDS: {active_creds}")
+# SWAP THIS VALUE TO CHANGE BETWEEN LOCAL AND DEV CREDENTIALS
+active_creds = dev_creds
 
 # These are the variables that will be used in the tests
 SECRET_KEY = active_creds['SECRET_KEY']
