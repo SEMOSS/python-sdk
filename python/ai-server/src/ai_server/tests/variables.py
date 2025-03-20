@@ -8,16 +8,16 @@ if load_dotenv():
 else:
     print(f"Failed to load environment variables")
 
-# SWAP THESE WITH YOUR OWN VALUES IF TESTING LOCALLY
+# Insert these in .env file
 local_creds = {
-    'SECRET_KEY': os.getenv('SECRET_KEY'),
-    'ACCESS_KEY': os.getenv('ACCESS_KEY'),
+    'SECRET_KEY': os.getenv('LOCAL_SECRET_KEY'),
+    'ACCESS_KEY': os.getenv('LOCAL_ACCESS_KEY'),
     'ENDPOINT': os.getenv('LOCAL_ENDPOINT'),
     'LLM_CHAT_ENGINE_ID': os.getenv('LOCAL_LLM_CHAT_ENGINE_ID'),
-    'LLM_EMBEDDING_ENGINE_ID': os.getenv('LOCAL_LLM_EMBEDDING_ENGINE_ID'), # this is chat gpt 4o that was given access to me from ryan
-    'VECTOR_ENGINE_ID': os.getenv('LOCAL_VECTOR_ENGINE_ID'), # I dont have access to this one either, now i do i think
-    'DATABASE_ENGINE_ID': os.getenv('LOCAL_DATABASE_ENGINE_ID'), #I added this one
-    'STORAGE_ENGINE_ID': os.getenv('LOCAL_STORAGE_ENGINE_ID'), #ryan said to make this non
+    'LLM_EMBEDDING_ENGINE_ID': os.getenv('LOCAL_LLM_EMBEDDING_ENGINE_ID'), 
+    'VECTOR_ENGINE_ID': os.getenv('LOCAL_VECTOR_ENGINE_ID'),
+    'DATABASE_ENGINE_ID': os.getenv('LOCAL_DATABASE_ENGINE_ID'),
+    'STORAGE_ENGINE_ID': os.getenv('LOCAL_STORAGE_ENGINE_ID'),
 }
 
 # Don't change these values unless there are problems ie. permissions, etc.
@@ -27,7 +27,7 @@ dev_creds = {
     'ENDPOINT': os.getenv('DEV_ENDPOINT'),
     'LLM_CHAT_ENGINE_ID': os.getenv('DEV_LLM_CHAT_ENGINE_ID'),
     'LLM_EMBEDDING_ENGINE_ID': os.getenv('DEV_LLM_EMBEDDING_ENGINE_ID'),
-    'VECTOR_ENGINE_ID': os.getenv('DEV_VECTOR_ENGINE_ID'), #now I have access, this is different than the one i started with
+    'VECTOR_ENGINE_ID': os.getenv('DEV_VECTOR_ENGINE_ID'),
     'DATABASE_ENGINE_ID': os.getenv('DEV_DATABASE_ENGINE_ID'),
     'STORAGE_ENGINE_ID': os.getenv('DEV_STORAGE_ENGINE_ID'),
 }
