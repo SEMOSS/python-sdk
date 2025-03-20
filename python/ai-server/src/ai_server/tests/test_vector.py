@@ -53,7 +53,7 @@ class VectorTests(TestServerClient):
 
     def test_list_documents(self):
 
-        document_info_list = self.vector_engine.listDocuments()#[0] removing this because listdocuments returns <class 'list'>
+        document_info_list = self.vector_engine.listDocuments()
 
         self.assertIsInstance(document_info_list, list)
 

@@ -11,7 +11,7 @@ class ModelTests(TestServerClient):
         model = ModelEngine(
             engine_id=LLM_CHAT_ENGINE_ID,
         )
-        #changed the name to be model_response_dict to make more sense
+
         model_response_dict = model.ask(
             question='what is the capital of france ey?')
 
@@ -50,10 +50,10 @@ class ModelTests(TestServerClient):
         self.assertCountEqual(model_response_dict.keys(), [
                               'response', 'numberOfTokensInPrompt', 'numberOfTokensInResponse'])
 
-        embeddings = model_response_dict['response'] #took this out '[0]', and checked response instead
+        embeddings = model_response_dict['response']
         self.assertIsInstance(embeddings, list)
 
-        #optional but ask if he wants this in - check that embeddings are list of floats
+        #optional
         if embeddings:
             self.assertIsInstance(embeddings[0], list)
             self.assertIsInstance(embeddings[0][0], float)
