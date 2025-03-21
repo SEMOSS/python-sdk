@@ -12,18 +12,18 @@ class ModelTests(TestServerClient):
             engine_id=LLM_CHAT_ENGINE_ID,
         )
 
-        model_response_list = model.ask(
+        model_response_dict = model.ask(
             question='what is the capital of france ey?')
 
         # Assert that the response is a dictionary with specific keys
-        self.assertIsInstance(model_response_list, list)
+        self.assertIsInstance(model_response_dict, dict)
 
-        model_response = model_response_list[0]
-
-        self.assertIsInstance(model_response, dict)
-
-        self.assertCountEqual(model_response.keys(), [
+        self.assertCountEqual(model_response_dict.keys(), [
                               'response', 'numberOfTokensInPrompt', 'numberOfTokensInResponse', 'messageId', 'roomId'])
+
+        model_response = model_response_dict['response']
+
+        self.assertIsInstance(model_response, str)
 
     def test_model_ask_with_stream(self):
 
@@ -41,18 +41,22 @@ class ModelTests(TestServerClient):
             engine_id=LLM_EMBEDDING_ENGINE_ID,
         )
 
-        model_response_list = model.embeddings(
+        model_response_dict = model.embeddings(
             strings_to_embed=['what is the capital of france ey?'])
 
-        # Assert that the response is a dictionary with specific keys
-        self.assertIsInstance(model_response_list, list)
+        # Assert that the model_response_dict is a dictionary
+        self.assertIsInstance(model_response_dict, dict)
 
-        model_response = model_response_list[0]
-        self.assertIsInstance(model_response, dict)
-
-        self.assertCountEqual(model_response.keys(), [
+        self.assertCountEqual(model_response_dict.keys(), [
                               'response', 'numberOfTokensInPrompt', 'numberOfTokensInResponse'])
 
+        embeddings = model_response_dict['response']
+        self.assertIsInstance(embeddings, list)
+
+        #optional
+        if embeddings:
+            self.assertIsInstance(embeddings[0], list)
+            self.assertIsInstance(embeddings[0][0], float)
 
 if __name__ == '__main__':
     # python test_model.py -v -m "access_key=my_access_key secret_key=my_secret_key base=http://example.com/api"
