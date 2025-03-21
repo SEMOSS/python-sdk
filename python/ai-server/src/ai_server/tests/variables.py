@@ -8,31 +8,38 @@ if load_dotenv():
 else:
     print(f"Failed to load environment variables")
 
-# SWAP THESE WITH YOUR OWN VALUES IF TESTING LOCALLY
+# Insert these in .env file
 local_creds = {
     'SECRET_KEY': os.getenv('LOCAL_SECRET_KEY'),
     'ACCESS_KEY': os.getenv('LOCAL_ACCESS_KEY'),
-    'ENDPOINT': "http://localhost:9090/Monolith_Dev/api",
-    'LLM_CHAT_ENGINE_ID': '4801422a-5c62-421e-a00c-05c6a9e15de8',
-    'LLM_EMBEDDING_ENGINE_ID': '',
-    'VECTOR_ENGINE_ID': 'dae9096d-1891-4077-b8bc-63ecdce08e14',
-    'DATABASE_ENGINE_ID': '515721c0-340f-42fa-b3ff-138882b8b75b'
+    'ENDPOINT': os.getenv('LOCAL_ENDPOINT'),
+    'LLM_CHAT_ENGINE_ID': os.getenv('LOCAL_LLM_CHAT_ENGINE_ID'),
+    'LLM_EMBEDDING_ENGINE_ID': os.getenv('LOCAL_LLM_EMBEDDING_ENGINE_ID'), 
+    'VECTOR_ENGINE_ID': os.getenv('LOCAL_VECTOR_ENGINE_ID'),
+    'DATABASE_ENGINE_ID': os.getenv('LOCAL_DATABASE_ENGINE_ID'),
+    'STORAGE_ENGINE_ID': os.getenv('LOCAL_STORAGE_ENGINE_ID'),
 }
 
 # Don't change these values unless there are problems ie. permissions, etc.
 dev_creds = {
     'SECRET_KEY': os.getenv('DEV_SECRET_KEY'),
     'ACCESS_KEY': os.getenv('DEV_ACCESS_KEY'),
-    'ENDPOINT': "https://workshop.cfg.deloitte.com/cfg-ai-dev/Monolith/api",
-    'LLM_CHAT_ENGINE_ID': '4801422a-5c62-421e-a00c-05c6a9e15de8',
-    'LLM_EMBEDDING_ENGINE_ID': 'e4449559-bcff-4941-ae72-0e3f18e06660',
-    'VECTOR_ENGINE_ID': '1222b449-1bc6-4358-9398-1ed828e4f26a',
-    'DATABASE_ENGINE_ID': '950eb187-e352-444d-ad6a-6476ed9390af',
-    'STORAGE_ENGINE_ID': '2d905aa3-b703-4c98-8133-5bcaefddac1e',
+    'ENDPOINT': os.getenv('DEV_ENDPOINT'),
+    'LLM_CHAT_ENGINE_ID': os.getenv('DEV_LLM_CHAT_ENGINE_ID'),
+    'LLM_EMBEDDING_ENGINE_ID': os.getenv('DEV_LLM_EMBEDDING_ENGINE_ID'),
+    'VECTOR_ENGINE_ID': os.getenv('DEV_VECTOR_ENGINE_ID'),
+    'DATABASE_ENGINE_ID': os.getenv('DEV_DATABASE_ENGINE_ID'),
+    'STORAGE_ENGINE_ID': os.getenv('DEV_STORAGE_ENGINE_ID'),
 }
 
-# SWAP THIS VALUE TO CHANGE BETWEEN LOCAL AND DEV CREDENTIALS
-active_creds = dev_creds
+# Dynamically select the credentials dictionary
+active_creds = os.getenv('ACTIVE_CREDS')
+if active_creds == 'local_creds':
+    active_creds = local_creds
+elif os.getenv('ACTIVE_CREDS') == 'dev_creds':
+    active_creds = dev_creds
+else:
+    raise ValueError(f"Invalid value for ACTIVE_CREDS: {active_creds}")
 
 # These are the variables that will be used in the tests
 SECRET_KEY = active_creds['SECRET_KEY']
