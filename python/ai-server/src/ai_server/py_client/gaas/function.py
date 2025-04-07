@@ -1,5 +1,6 @@
 from typing import Optional
 import logging
+import json
 from ai_server.server_resources.server_proxy import ServerProxy
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -24,9 +25,7 @@ class FunctionEngine(ServerProxy):
         if insight_id is None:
             insight_id = self.insight_id
 
-        pixel = (
-            f'ExecuteFunctionEngine(engine = "{self.engine_id}", map=[{parameterMap}]);'
-        )
+        pixel = f'ExecuteFunctionEngine(engine = "{self.engine_id}", map=[{json.dumps(parameterMap)}]);'
 
         output_payload_message = self.server.run_pixel(
             payload=pixel, insight_id=insight_id, full_response=True

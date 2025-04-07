@@ -49,17 +49,13 @@ class VectorEngine(ServerProxy):
             insight_id=insight_id,
         )
 
-        pixel = (
-            'CreateEmbeddingsFromDocuments(engine="'
-            + self.engine_id
-            + '", filePaths='
-            + json.dumps(insight_files)
+        optionalParams = (
+            f",paramValues=[{json.dumps(param_dict)}]"
+            if param_dict is not None and len(param_dict) > 0
+            else ""
         )
 
-        if len(param_dict) != 0:
-            pixel += ", paramValues = " + json.dumps(param_dict)
-
-        pixel += ");"
+        pixel = f'CreateEmbeddingsFromDocuments(engine="{self.engine_id}",filePaths={json.dumps(insight_files)}{optionalParams});'
 
         output_payload_message = self.server.run_pixel(
             payload=pixel, insight_id=insight_id, full_response=True
@@ -89,7 +85,9 @@ class VectorEngine(ServerProxy):
             insight_id = self.insight_id
 
         optionalParams = (
-            f",paramValues=[{param_dict}]" if param_dict is not None else ""
+            f",paramValues=[{json.dumps(param_dict)}]"
+            if param_dict is not None and len(param_dict) > 0
+            else ""
         )
 
         pixel = f'CreateEmbeddingsFromVectorCSVFile(engine="{self.engine_id}",filePaths={file_paths}{optionalParams});'
@@ -122,7 +120,9 @@ class VectorEngine(ServerProxy):
             insight_id = self.insight_id
 
         optionalParams = (
-            f",paramValues=[{param_dict}]" if param_dict is not None else ""
+            f",paramValues=[{json.dumps(param_dict)}]"
+            if param_dict is not None and len(param_dict) > 0
+            else ""
         )
 
         pixel = f'RemoveDocumentFromVectorDatabase(engine="{self.engine_id}",fileNames={file_names}{optionalParams});'
@@ -267,7 +267,9 @@ class VectorEngine(ServerProxy):
             insight_id = self.insight_id
 
         optionalParams = (
-            f",paramValues=[{param_dict}]" if param_dict is not None else ""
+            f",paramValues=[{json.dumps(param_dict)}]"
+            if param_dict is not None and len(param_dict) > 0
+            else ""
         )
 
         pixel = (

@@ -1,5 +1,6 @@
 from typing import List, Optional, Dict, Union, Any, Generator
 import logging
+import json
 from ai_server.server_resources.server_proxy import ServerProxy
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -49,7 +50,9 @@ class ModelEngine(ServerProxy):
             f',context=["<encode>{context}</encode>"]' if (context is not None) else ""
         )
         optionalParamDict = (
-            f",paramValues=[{param_dict}]" if (param_dict is not None) else ""
+            f",paramValues=[{json.dumps(param_dict)}]"
+            if (param_dict is not None)
+            else ""
         )
 
         pixel = f'LLM(engine="{self.engine_id}", command="<encode>{question}</encode>"{optionalContext}{optionalParamDict});'
@@ -99,7 +102,9 @@ class ModelEngine(ServerProxy):
             f',context=["<encode>{context}</encode>"]' if (context is not None) else ""
         )
         optionalParamDict = (
-            f",paramValues=[{param_dict}]" if (param_dict is not None) else ""
+            f",paramValues=[{json.dumps(param_dict)}]"
+            if (param_dict is not None)
+            else ""
         )
 
         pixel = f'LLM(engine="{self.engine_id}", command="<encode>{question}</encode>"{optionalContext}{optionalParamDict});'
@@ -144,7 +149,9 @@ class ModelEngine(ServerProxy):
         assert self.server is not None
 
         optionalParamDict = (
-            f",paramValues=[{param_dict}]" if (param_dict is not None) else ""
+            f",paramValues=[{json.dumps(param_dict)}]"
+            if (param_dict is not None)
+            else ""
         )
 
         pixel = f'Embeddings(engine="{self.engine_id}", values={strings_to_embed}{optionalParamDict});'
