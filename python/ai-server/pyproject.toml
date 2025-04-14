@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai-server-sdk"
-version = "0.0.19"
+version = "0.0.20"
 description = "Utility package to connect to AI Server instances."
 readme = "README.md"
-license = {file = "LICENSE"}
+license = "MIT"
 authors = [
     { name = "Thomas Trankle"},
     { name = "Maher Khalil"},
@@ -26,12 +26,12 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Operating System :: OS Independent",
   "Operating System :: POSIX",
   "Operating System :: MacOS",
   "Operating System :: POSIX :: Linux",
   "Operating System :: Microsoft :: Windows",
-  "License :: OSI Approved :: MIT License",
 ]
 
 [project.optional-dependencies]
@@ -41,8 +41,8 @@ full = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Deloitte-Default/cfgai-py-ai-server"
-Repository = "https://github.com/Deloitte-Default/cfgai-py-ai-server"
+Homepage = "https://github.com/SEMOSS/python-sdk"
+Repository = "https://github.com/SEMOSS/python-sdk"
 
 [tool.ruff]
 line-length = 120

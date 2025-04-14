@@ -286,46 +286,46 @@ class VectorEngine(ServerProxy):
         return output_payload_message["pixelReturn"][0]["output"]
 
     def to_langchain_vector_store(self):
+        """Transform the vector engine into a langchain BaseRetriever object so that it can be used with langchain code."""
         from langchain_core.callbacks import CallbackManagerForRetrieverRun
         from langchain_core.documents import Document
         from langchain_core.retrievers import BaseRetriever
 
-        class VectorStoreCfgAI(BaseRetriever):
+        class SemossLangchainVector(BaseRetriever):
             engine_id: str
             vector_engine: VectorEngine
             insight_id: Optional[str]
 
             def __init__(self, vector_engine):
-                super().__init__(
-                    engine_id=vector_engine.engine_id,
-                    insight_id=vector_engine.insight_id,
-                    vector_engine=vector_engine,
-                )
+                """Initialize with the provided vector engine."""
+                data = {
+                    "engine_id": vector_engine.engine_id,
+                    "insight_id": vector_engine.insight_id,
+                    "vector_engine": vector_engine,
+                }
+                super().__init__(**data)
 
-            def add_documents(self, file_paths: List[str]):
-                """Adds documents to the vector store.
+            class Config:
+                """Configuration for this pydantic object."""
 
-                Args:
-                    file_paths (List[str]): Path to documents
-                """
+                validate_by_name = True
+
+            def addDocs(self, file_paths: List[str]) -> None:
+                """Add documents to the vector store."""
                 self.vector_engine.addDocument(
                     file_paths=file_paths, insight_id=self.insight_id
                 )
 
-            def similarity_search(self, query: str, limit: int) -> List[Document]:
-                """Performs a similarity search on the vector store using the given query.
+            def removeDocs(self, file_names: List[str]) -> None:
+                """Remove documents from the vector store."""
+                return self.vector_engine.removeDocument(
+                    file_names=file_names, insight_id=self.insight_id
+                )
 
-                Args:
-                    query (str): Query to search
-                    limit (int): Maximum number of nearest neighbor results to be returned
-
-                Returns:
-                    List[Document]:  A list of the top `k` most similar documents to the query.
-                    Each document contains the page content and metadata associated with
-                    the corresponding search result.
-                """
+            def similaritySearch(self, query: str, k: int) -> List[Document]:
+                """Search for documents similar to the query."""
                 results = self.vector_engine.nearestNeighbor(
-                    search_statement=query, limit=limit, insight_id=self.insight_id
+                    search_statement=query, limit=k, insight_id=self.insight_id
                 )
 
                 documents = [
@@ -334,14 +334,14 @@ class VectorEngine(ServerProxy):
                 ]
                 return documents
 
+            def listDocs(self):
+                """List the documents in the vector store"""
+                return self.vector_engine.listDocuments()
+
             def _get_relevant_documents(
-                self, query: str, *, run_manager: CallbackManagerForRetrieverRun
+                self, query: str, *, run_manager: CallbackManagerForRetrieverRun, k: int
             ) -> List[Document]:
-                return self.similarity_search(query)
+                """Retrieve relevant documents based on the query."""
+                return self.similarity_search(query, k)
 
-            @property
-            def _llm_type(self) -> str:
-                """Return type of chat model."""
-                return "CFG AI"
-
-        return VectorStoreCfgAI(vector_engine=self)
+        return SemossLangchainVector(vector_engine=self)

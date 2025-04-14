@@ -169,13 +169,46 @@ class ModelEngine(ServerProxy):
         return self.engine_id
 
     def get_model_type(self) -> str:
-
+        """Return the serving mechanism of this model"""
         insight_id = self.insight_id
         pixel = f'GetModelAPI(model="{self.engine_id}");'
 
         output_payload_message = self.server.run_pixel(
             payload=pixel, insight_id=insight_id, full_response=True
         )
+
+        if output_payload_message["pixelReturn"][0]["operationType"] == ["ERROR"]:
+            raise RuntimeError(output_payload_message["pixelReturn"][0]["output"])
+
+        return output_payload_message["pixelReturn"][0]["output"]
+
+    def get_conversation_history(self, insight_id: Optional[str] = None) -> List[Dict]:
+        """This method is responsible to get message history back from the model logs database.
+
+        Args:
+            - insight_id (Optional[str]): Identifier for insights.
+
+        Returns:
+            `List[Dict]`: A dictionary with the response the model logs database. The dictionary in the response will contain the following keys:
+            - MESSAGE_DATA
+            - DATE_CREATED
+            - MESSAGE_ID
+            - MESSAGE_TYPE
+        """
+
+        if insight_id is None:
+            insight_id = self.insight_id
+
+        epoc = super().get_next_epoc()
+
+        pixel = f'GetRoomMessages(roomId="{insight_id}");'
+
+        output_payload_message = self.server.run_pixel(
+            payload=pixel, insight_id=insight_id, full_response=True
+        )
+
+        if output_payload_message["pixelReturn"][0]["operationType"] == ["ERROR"]:
+            raise RuntimeError(output_payload_message["pixelReturn"][0]["output"])
 
         return output_payload_message["pixelReturn"][0]["output"]
 
@@ -184,22 +217,20 @@ class ModelEngine(ServerProxy):
 
         from langchain_core.embeddings import Embeddings
 
-        class CfgEmbeddingsEngine(Embeddings):
+        class SemossLangchainEmbeddingsModel(Embeddings):
             def __init__(self, modelEngine):
                 self.modelEngine = modelEngine
 
             def embed_documents(self, texts: List[str]) -> List[List[float]]:
                 """Embed search docs."""
-                return self.modelEngine.embeddings(strings_to_embed=texts)[0][
-                    "response"
-                ]
+                return self.modelEngine.embeddings(strings_to_embed=texts)["response"]
 
             def embed_query(self, text: str) -> List[float]:
-                return self.modelEngine.embeddings(strings_to_embed=[text])[0][
-                    "response"
-                ][0]
+                return self.modelEngine.embeddings(strings_to_embed=[text])["response"][
+                    0
+                ]
 
-        return CfgEmbeddingsEngine(modelEngine=self)
+        return SemossLangchainEmbeddingsModel(modelEngine=self)
 
     def to_langchain_chat_model(self):
         """Transform the model engine into a langchain `BaseChatModel` object so that it can be used with langchain code"""
@@ -208,12 +239,9 @@ class ModelEngine(ServerProxy):
             ChatGeneration,
             ChatResult,
         )
-        from langchain_core.messages import (
-            AIMessage,
-            BaseMessage,
-        )
+        from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 
-        class ChatCfgAI(BaseChatModel):
+        class SemossLangchainChatModel(BaseChatModel):
             engine_id: str
             model_engine: ModelEngine
             model_type: str
@@ -224,13 +252,27 @@ class ModelEngine(ServerProxy):
                     "model_engine": model_engine,
                     "model_type": model_engine.get_model_type(),
                 }
-
                 super().__init__(**data)
+
+            def get_chat_history(
+                self, insight_id: Optional[str] = None
+            ) -> List[BaseMessage]:
+                """Retrieve past conversation history and format it for Langchain."""
+
+                # Fetch chat history from ModelEngine
+                history = self.model_engine.get_conversation_history()
+                messages = []
+                for msg in sorted(history, key=lambda x: x["DATE_CREATED"]):
+                    if msg["MESSAGE_TYPE"] == "INPUT":
+                        messages.append(HumanMessage(content=msg["MESSAGE_DATA"]))
+                    elif msg["MESSAGE_TYPE"] == "RESPONSE":
+                        messages.append(AIMessage(content=msg["MESSAGE_DATA"]))
+                return messages
 
             class Config:
                 """Configuration for this pydantic object."""
 
-                allow_population_by_field_name = True
+                validate_by_name = True
 
             def _generate(
                 self,
@@ -239,7 +281,15 @@ class ModelEngine(ServerProxy):
                 **kwargs: Any,
             ) -> ChatResult:
                 """Top Level call"""
-                full_prompt = self.convert_messages_to_full_prompt(messages)
+                history = self.get_chat_history()
+
+                # Combine history with new messages (if history exists)
+                full_messages = history + messages if history else messages
+
+                # Convert to appropriate prompt format
+                full_prompt = self.convert_messages_to_full_prompt(full_messages)
+
+                # Send the combined prompt to the model
                 response = self.model_engine.ask(
                     question="", param_dict={**kwargs, **{"full_prompt": full_prompt}}
                 )
@@ -293,6 +343,6 @@ class ModelEngine(ServerProxy):
             @property
             def _llm_type(self) -> str:
                 """Return type of chat model."""
-                return "CFG AI"
+                return "SEMOSS"
 
-        return ChatCfgAI(model_engine=self)
+        return SemossLangchainChatModel(model_engine=self)

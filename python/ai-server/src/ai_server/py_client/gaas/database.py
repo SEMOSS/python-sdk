@@ -138,3 +138,48 @@ class DatabaseEngine(ServerProxy):
             raise RuntimeError(output_payload_message["pixelReturn"][0]["output"])
 
         return output_payload_message["pixelReturn"][0]["output"]
+
+    def to_langchain_database(self):
+        """Transform the database engine into a langchain BaseRetriever object so that it can be used with langchain code"""
+        from langchain_core.retrievers import BaseRetriever
+
+        class SemossLangchainDatabase(BaseRetriever):
+            engine_id: str
+            database_engine: DatabaseEngine
+            insight_id: Optional[str]
+
+            def __init__(self, database_engine):
+                """Initialize with the provided database engine."""
+                data = {
+                    "engine_id": database_engine.engine_id,
+                    "insight_id": database_engine.insight_id,
+                    "database_engine": database_engine,
+                }
+                super().__init__(**data)
+
+            class Config:
+                """Configuration for this pydantic object."""
+
+                validate_by_name = True
+
+            def executeQuery(self, query: str) -> any:
+                """Execute a query on the database."""
+                return self.database_engine.execQuery(query=query)
+
+            def insertQuery(self, query: str) -> any:
+                """Insert data into the database."""
+                return self.database_engine.insertData(query=query)
+
+            def updateQuery(self, query: str) -> any:
+                """Update data in the database."""
+                return self.database_engine.updateData(query=query)
+
+            def removeQuery(self, query: str) -> any:
+                """Remove data from the database."""
+                return self.database_engine.removeData(query=query)
+
+            def _get_relevant_documents(self) -> str:
+                """Retrieve relevant documents from the database."""
+                return "SQL Operations"
+
+        return SemossLangchainDatabase(database_engine=self)
