@@ -34,6 +34,7 @@ class VectorEngine(ServerProxy):
 
         Args:
             file_paths (`List[str]`): List of local files paths to push to the server and index.
+            space (`Optional[str]`): The app id for where the file exists. If not provided will assume current insight space.
             param_dict (`Optional[Dict]`): Additional parameters the engine might need to process the documents.
             insight_id (`Optional[str]`): The insight ID to upload the documents to and process the request. Default is to use the clients current insight.
         """
@@ -69,6 +70,7 @@ class VectorEngine(ServerProxy):
     def addVectorCSVFile(
         self,
         file_paths: List[str],
+        space: Optional[str] = None,
         param_dict: Optional[Dict] = {},
         insight_id: Optional[str] = None,
     ) -> bool:
@@ -76,13 +78,18 @@ class VectorEngine(ServerProxy):
         Add the vector csv file format documents into the vector database
 
         Args:
-            file_paths (`List[str]`):  The paths (relative to the insight_id) of the files to add
-            param_dict (`dict`): A dictionary with optional parameters for listing the documents (index class for FAISS as an example)
-            insight_id (`Optional[str]`): Unique identifier for the temporal worksapce where actions are being isolated
+            file_paths (`List[str]`):  The paths (relative to the insight_id or space) of the files to add.
+            space (`Optional[str]`): The app id for where the file exists. If not provided will assume current insight space.
+            param_dict (`Optional[dict]`): A dictionary with optional parameters for listing the documents (index class for FAISS as an example).
+            insight_id (`Optional[str]`): Unique identifier for the temporal worksapce where actions are being isolated.
         """
         assert file_paths is not None
         if insight_id is None:
             insight_id = self.insight_id
+
+        optionalSpace = (
+            f",space=['{space}']" if (space is not None and space != "") else ""
+        )
 
         optionalParams = (
             f",paramValues=[{json.dumps(param_dict)}]"
@@ -90,7 +97,7 @@ class VectorEngine(ServerProxy):
             else ""
         )
 
-        pixel = f'CreateEmbeddingsFromVectorCSVFile(engine="{self.engine_id}",filePaths={file_paths}{optionalParams});'
+        pixel = f'CreateEmbeddingsFromVectorCSVFile(engine="{self.engine_id}",filePaths={file_paths}{optionalSpace}{optionalParams});'
 
         output_payload_message = self.server.run_pixel(
             payload=pixel, insight_id=insight_id, full_response=True
@@ -104,6 +111,7 @@ class VectorEngine(ServerProxy):
     def removeDocument(
         self,
         file_names: List[str],
+        space: Optional[str] = None,
         param_dict: Optional[Dict] = {},
         insight_id: Optional[str] = None,
     ) -> bool:
@@ -119,13 +127,17 @@ class VectorEngine(ServerProxy):
         if insight_id is None:
             insight_id = self.insight_id
 
+        optionalSpace = (
+            f",space=['{space}']" if (space is not None and space != "") else ""
+        )
+
         optionalParams = (
             f",paramValues=[{json.dumps(param_dict)}]"
             if param_dict is not None and len(param_dict) > 0
             else ""
         )
 
-        pixel = f'RemoveDocumentFromVectorDatabase(engine="{self.engine_id}",fileNames={file_names}{optionalParams});'
+        pixel = f'RemoveDocumentFromVectorDatabase(engine="{self.engine_id}",fileNames={file_names}{optionalSpace}{optionalParams});'
 
         output_payload_message = self.server.run_pixel(
             payload=pixel, insight_id=insight_id, full_response=True
