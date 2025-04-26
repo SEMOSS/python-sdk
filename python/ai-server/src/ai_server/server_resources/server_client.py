@@ -392,7 +392,7 @@ class ServerClient:
 
         logger.info("Sending a PayloadStruct " + input_payload_message)
 
-        # RemoteEngineRun is responsible for handling ModelEngine, StorageEngine and DatabaseEngine via RESTServer
+        # RemoteEngineRun is responsible for handling ModelEngine, StorageEngine and DatabaseEngine via ServerClient
         output_payload_message = self.run_pixel(
             payload='RemoteEngineRun(payload="<e>' + input_payload_message + '</e>");',
             insight_id=payload_struct["insightId"],
