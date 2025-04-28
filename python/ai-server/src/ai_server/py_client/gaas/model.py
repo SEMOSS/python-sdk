@@ -18,7 +18,7 @@ class ModelEngine(ServerProxy):
         self,
         question: str,
         context: Optional[str] = None,
-        use_history: Optional[bool] = True,
+        use_history: Optional[bool] = True,  # To control the history
         insight_id: Optional[str] = None,
         param_dict: Optional[Dict] = None,
     ) -> List[Dict]:
@@ -73,7 +73,7 @@ class ModelEngine(ServerProxy):
         self,
         question: str,
         context: Optional[str] = None,
-        use_history: Optional[bool] = True,
+        use_history: Optional[bool] = True,  # To control the history
         insight_id: Optional[str] = None,
         param_dict: Optional[Dict] = None,
     ) -> Generator:
