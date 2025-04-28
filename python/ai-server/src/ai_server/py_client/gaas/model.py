@@ -18,6 +18,7 @@ class ModelEngine(ServerProxy):
         self,
         question: str,
         context: Optional[str] = None,
+        use_history: Optional[bool] = True,  # To control the history
         insight_id: Optional[str] = None,
         param_dict: Optional[Dict] = None,
     ) -> List[Dict]:
@@ -55,7 +56,9 @@ class ModelEngine(ServerProxy):
             else ""
         )
 
-        pixel = f'LLM(engine="{self.engine_id}", command="<encode>{question}</encode>"{optionalContext}{optionalParamDict});'
+        use_history_param = str(use_history).lower()
+
+        pixel = f'LLM(engine="{self.engine_id}", command="<encode>{question}</encode>", useHistory={use_history_param}{optionalContext}{optionalParamDict});'
 
         output_payload_message = self.server.run_pixel(
             payload=pixel, insight_id=insight_id, full_response=True
@@ -70,6 +73,7 @@ class ModelEngine(ServerProxy):
         self,
         question: str,
         context: Optional[str] = None,
+        use_history: Optional[bool] = True,  # To control the history
         insight_id: Optional[str] = None,
         param_dict: Optional[Dict] = None,
     ) -> Generator:
@@ -107,7 +111,9 @@ class ModelEngine(ServerProxy):
             else ""
         )
 
-        pixel = f'LLM(engine="{self.engine_id}", command="<encode>{question}</encode>"{optionalContext}{optionalParamDict});'
+        use_history_param = str(use_history).lower()
+
+        pixel = f'LLM(engine="{self.engine_id}", command="<encode>{question}</encode>", useHistory={use_history_param}{optionalContext}{optionalParamDict});'
 
         for message in self.server.get_partial_responses(
             self.server.run_pixel_separate_thread(
