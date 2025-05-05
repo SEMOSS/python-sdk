@@ -246,17 +246,28 @@ class ModelEngine(ServerProxy):
             ChatResult,
         )
         from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+        from collections.abc import Sequence
+        from langchain_core.tools import BaseTool
+        from typing import Callable
+        from langchain_core.runnables import Runnable
+        from langchain_core.language_models.base import LanguageModelInput
 
         class SemossLangchainChatModel(BaseChatModel):
             engine_id: str
             model_engine: ModelEngine
             model_type: str
 
+            # define the tools json
+            tools: Sequence[
+                Union[Dict[str, Any], type, Callable, BaseTool]  # noqa: UP006
+            ]
+
             def __init__(self, model_engine):
                 data = {
                     "engine_id": model_engine.get_model_engine_id(),
                     "model_engine": model_engine,
                     "model_type": model_engine.get_model_type(),
+                    "tools": [],
                 }
                 super().__init__(**data)
 
@@ -295,10 +306,16 @@ class ModelEngine(ServerProxy):
                 # Convert to appropriate prompt format
                 full_prompt = self.convert_messages_to_full_prompt(full_messages)
 
+                param_dict = {**kwargs, **{"full_prompt": full_prompt}}
+                if kwargs.get("tools") is not None:
+                    # Convert tools to json string
+                    processed_tools = self.convert_tools_to_list_dict(
+                        kwargs.pop("tools")
+                    )
+                    param_dict["tools"] = processed_tools
+
                 # Send the combined prompt to the model
-                response = self.model_engine.ask(
-                    question="", param_dict={**kwargs, **{"full_prompt": full_prompt}}
-                )
+                response = self.model_engine.ask(question="", param_dict=param_dict)
 
                 return self._create_chat_result(response=response)
 
@@ -309,10 +326,34 @@ class ModelEngine(ServerProxy):
                 generation_info = dict()
                 if "logprobs" in response.keys():
                     generation_info["logprobs"] = response.pop("logprobs", {})
-                gen = ChatGeneration(
-                    message=AIMessage(content=message),
-                    generation_info=generation_info,
-                )
+
+                # if this is a tool
+                # need to do a different return
+
+                if response["messageType"] == "TOOL":
+                    tool_response = [
+                        {
+                            "id": message["id"],
+                            "type": "function",
+                            "function": {
+                                "arguments": message["arguments"],
+                                "name": message["name"],
+                            },
+                        }
+                    ]
+
+                    gen = ChatGeneration(
+                        message=AIMessage(
+                            content="", additional_kwargs={"tool_calls": tool_response}
+                        ),
+                        generation_info=generation_info,
+                    )
+                else:
+                    # if this is a normal message, just return the message
+                    gen = ChatGeneration(
+                        message=AIMessage(content=message),
+                        generation_info=generation_info,
+                    )
 
                 generations.append(gen)
 
@@ -345,6 +386,66 @@ class ModelEngine(ServerProxy):
                     full_prompt: str
                     full_prompt = "\n".join([m.content for m in messages])
                     return full_prompt
+
+            def convert_tools_to_list_dict(
+                self, tools: Sequence[BaseTool]
+            ) -> List[Dict]:
+                """Convert a list of tools to a list of dicts
+
+                Args:
+                    tools: The list of tools to convert.
+
+                Returns:
+                    The dict containing the tools details
+                """
+                processed_tools_list = []
+                for tool in tools:
+                    tool_dict = {}
+                    tool_dict["name"] = tool.name
+                    tool_dict["description"] = tool.description
+                    tool_params = {}
+                    for args_name in tool.args.keys():
+                        arg_map = {}
+                        arg_map["description"] = tool.args[args_name]["title"]
+                        arg_map["type"] = tool.args[args_name]["type"]
+                        tool_params[args_name] = arg_map
+                    tool_dict["parameters"] = {
+                        "type": "object",
+                        "properties": tool_params,
+                        "required": list(tool.args.keys()),
+                    }
+                    tool_dict["type"] = "function"
+                    processed_tools_list.append(
+                        {"type": "function", "function": tool_dict}
+                    )
+
+                return processed_tools_list
+
+            def bind_tools(
+                self,
+                tools: Sequence[
+                    Union[Dict[str, Any], type, Callable, BaseTool]  # noqa: UP006
+                ],
+                *,
+                tool_choice: Optional[Union[str]] = None,
+                **kwargs: Any,
+            ) -> Runnable[LanguageModelInput, BaseMessage]:
+                """Bind tools to the model.
+
+                Args:
+                    tools: Sequence of tools to bind to the model.
+                    tool_choice: The tool to use. If "any" then any tool can be used.
+
+                Returns:
+                    A Runnable that returns a message.
+                """
+                from langchain_core.runnables import RunnableBinding
+
+                runnable_binding = RunnableBinding(
+                    bound=self,
+                    kwargs={"tools": tools},  # <-- Note the additional kwargs
+                )
+                return runnable_binding
 
             @property
             def _llm_type(self) -> str:
