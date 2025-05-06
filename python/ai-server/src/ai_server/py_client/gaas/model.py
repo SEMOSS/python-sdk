@@ -205,8 +205,6 @@ class ModelEngine(ServerProxy):
         if insight_id is None:
             insight_id = self.insight_id
 
-        epoc = super().get_next_epoc()
-
         pixel = f'GetRoomMessages(roomId="{insight_id}");'
 
         output_payload_message = self.server.run_pixel(
@@ -224,7 +222,8 @@ class ModelEngine(ServerProxy):
         from langchain_core.embeddings import Embeddings
 
         class SemossLangchainEmbeddingsModel(Embeddings):
-            def __init__(self, modelEngine):
+
+            def __init__(self, modelEngine: ModelEngine):
                 self.modelEngine = modelEngine
 
             def embed_documents(self, texts: List[str]) -> List[List[float]]:
@@ -245,7 +244,11 @@ class ModelEngine(ServerProxy):
             ChatGeneration,
             ChatResult,
         )
-        from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+        from langchain_core.messages import (
+            AIMessage,
+            BaseMessage,
+            HumanMessage,
+        )
         from collections.abc import Sequence
         from langchain_core.tools import BaseTool
         from typing import Callable
@@ -262,7 +265,7 @@ class ModelEngine(ServerProxy):
                 Union[Dict[str, Any], type, Callable, BaseTool]  # noqa: UP006
             ]
 
-            def __init__(self, model_engine):
+            def __init__(self, model_engine: ModelEngine):
                 data = {
                     "engine_id": model_engine.get_model_engine_id(),
                     "model_engine": model_engine,
