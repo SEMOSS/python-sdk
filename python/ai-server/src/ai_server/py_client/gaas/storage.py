@@ -190,7 +190,7 @@ class StorageEngine(ServerProxy):
             storage_engine: StorageEngine
             insight_id: Optional[str]
 
-            def __init__(self, storage_engine):
+            def __init__(self, storage_engine: StorageEngine):
                 """Initialize with the provided storage engine."""
                 self.engine_id = storage_engine.engine_id
                 self.storage_engine = storage_engine

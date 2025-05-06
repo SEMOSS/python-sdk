@@ -10,7 +10,7 @@ else:
 
 setup(
     name="ai-server-sdk",
-    version="0.0.20",
+    version="0.0.21",
     packages=find_packages(),
     install_requires=[
         "requests",

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai-server-sdk"
-version = "0.0.20"
+version = "0.0.21"
 description = "Utility package to connect to AI Server instances."
 readme = "README.md"
 license = "MIT"
