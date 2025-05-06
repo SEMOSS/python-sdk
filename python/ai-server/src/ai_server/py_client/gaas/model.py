@@ -334,16 +334,18 @@ class ModelEngine(ServerProxy):
                 # need to do a different return
 
                 if response["messageType"] == "TOOL":
-                    tool_response = [
-                        {
-                            "id": message["id"],
-                            "type": "function",
-                            "function": {
-                                "arguments": message["arguments"],
-                                "name": message["name"],
-                            },
-                        }
-                    ]
+                    tool_response = []
+                    for m in message:
+                        tool_response.append(
+                            {
+                                "id": m["id"],
+                                "type": "function",
+                                "function": {
+                                    "arguments": m["arguments"],
+                                    "name": m["name"],
+                                },
+                            }
+                        )
 
                     gen = ChatGeneration(
                         message=AIMessage(
