@@ -283,6 +283,8 @@ class ModelEngine(ServerProxy):
                 history = self.model_engine.get_conversation_history()
                 messages = []
                 for msg in sorted(history, key=lambda x: x["DATE_CREATED"]):
+                    if "MESSAGE_DATA" not in msg:
+                        continue
                     if msg["MESSAGE_TYPE"] == "INPUT":
                         messages.append(HumanMessage(content=msg["MESSAGE_DATA"]))
                     elif msg["MESSAGE_TYPE"] == "RESPONSE":
@@ -333,7 +335,8 @@ class ModelEngine(ServerProxy):
                 # if this is a tool
                 # need to do a different return
 
-                if response["messageType"] == "TOOL":
+                # if response["messageType"] == "TOOL":
+                if response.get("messageType") == "TOOL":  # Returns None in case "messageType" is not present
                     tool_response = []
                     for m in message:
                         tool_response.append(
