@@ -89,6 +89,12 @@ class ServerClient:
             self.loginUserAccessKey()
         else:
             self.loginBearerToken()
+
+        # This will hold CSRF and any other required headers (merge into all calls)
+        self.required_headers = {}
+
+        # Perform CSRF/config logic (but don't crash if config fails)
+        self.set_csrf_if_enabled()
         # boolean flag to make sure the users have authenticated and the cookies are set
         self.connected: bool = True
         # keep track of the the insights created from this connection
@@ -181,6 +187,37 @@ class ServerClient:
         # display the cookies
         logger.info(self.cookies)
 
+    def set_csrf_if_enabled(self):
+        config_url = self.main_url + "/config"
+        try:
+            resp = requests.get(config_url, cookies=getattr(self, "cookies", None))
+            resp.raise_for_status()
+            config_data = resp.json()
+            use_csrf = config_data.get("csrf", False)
+            if use_csrf:
+                logger.info("CSRF enabled; fetching CSRF token.")
+                csrf_headers = {
+                    "x-csrf-token": "fetch",
+                    "Accept": "application/json, text/plain, */*",
+                }
+                csrf_resp = requests.get(
+                    self.main_url + "/config/fetchCsrf",
+                    headers=csrf_headers,
+                    cookies=getattr(self, "cookies", None),
+                )
+                csrf_resp.raise_for_status()
+                csrf_token = csrf_resp.headers.get("X-Csrf-Token")
+                if csrf_token:
+                    self.required_headers["X-Csrf-Token"] = csrf_token
+                    logger.info("CSRF token set.")
+                else:
+                    logger.warning("CSRF enabled but token not found in headers.")
+            else:
+                logger.info("CSRF not enabled; continuing without CSRF header.")
+        except Exception as e:
+            logger.error(f"Could not fetch or parse config for csrf. Error: {str(e)}")
+            # No crash - just leave required_headers clear
+
     # TODO add dec
     def get_auth_headers(self) -> Dict:
         """Get the autheroization headers used to authenticate the user"""
@@ -201,6 +238,7 @@ class ServerClient:
             self.main_url + "/engine/runPixel",
             cookies=self.cookies,
             data={"expression": "META | true", "insightId": "new"},
+            headers=self.required_headers,
         )
 
         # raise HTTP error if one occurs
@@ -260,7 +298,10 @@ class ServerClient:
 
         api_url = "/engine/runPixel"
         response = requests.post(
-            self.main_url + api_url, cookies=self.cookies, data=pixel_payload
+            self.main_url + api_url,
+            cookies=self.cookies,
+            data=pixel_payload,
+            headers=self.required_headers,
         )
 
         response_dict = response.json()
@@ -334,7 +375,10 @@ class ServerClient:
         started_streaming = False
         while True:
             response = requests.post(
-                partial_endpoint, cookies=cookies, data=payload
+                partial_endpoint,
+                cookies=cookies,
+                data=payload,
+                headers=self.required_headers,
             ).json()
             msg = response.get("message")
             msg_length = len(msg) if msg is not None else 0
@@ -540,7 +584,10 @@ class ServerClient:
         for filepath in files:
             with open(filepath, "rb") as fobj:
                 response = requests.post(
-                    url, cookies=self.cookies, files={"file": fobj}
+                    url,
+                    cookies=self.cookies,
+                    files={"file": fobj},
+                    headers=self.required_headers,
                 )
                 insight_file_paths.append(response.json()[0]["fileName"])
 
