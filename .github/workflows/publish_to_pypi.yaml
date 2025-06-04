@@ -16,16 +16,20 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: python/ai-server/src
+        working-directory: python/ai-server
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
+    - name: Copy README to src directory
+      run: |
+        cp python/ai-server/README.md python/ai-server/src/README.md
+      
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.10'
+        python-version: '3.9'
         
     - name: Install build dependencies
       run: |
@@ -35,7 +39,7 @@ jobs:
     - name: Install package dependencies
       run: |
         pip install -e .
-    
+        
     - name: Build package
       run: |
         python -m build
@@ -50,18 +54,25 @@ jobs:
       with:
         password: ${{ secrets.TEST_PYPI_API_TOKEN }}
         repository-url: https://test.pypi.org/legacy/
-        packages-dir: python/ai-server/src/dist/
+        packages-dir: python/ai-server/dist/
+        
+    - name: Verify Test PyPI installation (manual trigger with test option)
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_to_test_pypi == 'true'
+      run: |
+        sleep 60  # Wait for package to be available
+        pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ ai-server-sdk
+        python -c "import ai_server; print('Package imported successfully')"
         
     - name: Publish to PyPI (on release)
       if: github.event_name == 'release' && github.event.action == 'published'
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}
-        packages-dir: python/ai-server/src/dist/
+        packages-dir: python/ai-server/dist/
         
     - name: Publish to Test PyPI (manual trigger without test option)
       if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_to_test_pypi != 'true'
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}
-        packages-dir: python/ai-server/src/dist/
+        packages-dir: python/ai-server/dist/
