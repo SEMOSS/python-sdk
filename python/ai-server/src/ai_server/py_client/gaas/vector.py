@@ -308,7 +308,7 @@ class VectorEngine(ServerProxy):
             vector_engine: VectorEngine
             insight_id: Optional[str]
 
-            def __init__(self, vector_engine):
+            def __init__(self, vector_engine: VectorEngine):
                 """Initialize with the provided vector engine."""
                 data = {
                     "engine_id": vector_engine.engine_id,
