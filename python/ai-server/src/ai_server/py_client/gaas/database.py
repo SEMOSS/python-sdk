@@ -148,7 +148,7 @@ class DatabaseEngine(ServerProxy):
             database_engine: DatabaseEngine
             insight_id: Optional[str]
 
-            def __init__(self, database_engine):
+            def __init__(self, database_engine: DatabaseEngine):
                 """Initialize with the provided database engine."""
                 data = {
                     "engine_id": database_engine.engine_id,

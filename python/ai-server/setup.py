@@ -9,7 +9,7 @@ else:
 
 setup(
     name="ai-server-sdk",
-    version="0.0.22",
+    version="0.0.23",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     install_requires=[
