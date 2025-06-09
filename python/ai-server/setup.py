@@ -1,17 +1,17 @@
 from setuptools import find_packages, setup
 import os
 
-# Read the contents of README.md if it exists
 if os.path.exists("README.md"):
-    with open("README.md", "r") as f:
+    with open("README.md", "r", encoding="utf-8") as f:
         long_description = f.read()
 else:
     long_description = "AI Server SDK - Python client SDK to connect to the AI Server."
 
 setup(
     name="ai-server-sdk",
-    version="0.0.21",
-    packages=find_packages(),
+    version="0.0.23",
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
     install_requires=[
         "requests",
         "pandas",
