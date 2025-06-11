@@ -220,6 +220,7 @@ server_connection.upload_files(files=["path_to_local_file1", "path_to_local_file
 ```python
 
 import ai_server
+from ai_server import ServerClient
 from ai_server import ModelEngine
 from langchain_core.messages import HumanMessage
 from langchain_core.tools import tool
