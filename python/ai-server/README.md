@@ -1,14 +1,14 @@
 # **AI Server**
 
-*ai-server-sdk* is a python client SDK to connect to the AI Server
+_ai-server-sdk_ is a python client SDK to connect to the AI Server
 
 ## Using this package you can:
 
- - Inference with Models you have acces to within the server
- - Create Pandas DataFrame from Databases connections
- - Pull Storage objects
- - Run pixel and get the direct output or full json response.
- - Pull data products from an existing insight using REST API.
+- Inference with Models you have acces to within the server
+- Create Pandas DataFrame from Databases connections
+- Pull Storage objects
+- Run pixel and get the direct output or full json response.
+- Pull data products from an existing insight using REST API.
 
 ## **Install**
 
@@ -18,13 +18,14 @@ or
 
     pip install ai-server-sdk[full]
 
-  *Note*: The `full` option installs optional dependencies for langchain support.
+_Note_: The `full` option installs optional dependencies for langchain support.
 
 ## **Usage**
 
 To interract with an ai-server instance, import the `ai_server` package and connect via ServerClient.
 
 ### Setup
+
 ```python
 from ai_server import ServerClient
 
@@ -40,6 +41,7 @@ server_connection = ServerClient(base='<Your deployed server Monolith URL>', bea
 ```
 
 ### Inference with different Model Engines
+
 ```python
 # import the model engine class for the ai_server package
 from ai_server import ModelEngine
@@ -58,7 +60,7 @@ model.ask(question = 'What is the capital of France?')
 model = ModelEngine(engine_id="e4449559-bcff-4941-ae72-0e3f18e06660", insight_id=server_connection.cur_insight)
 model.embeddings(strings_to_embed=['text1','text2'])
 # example output
-# {'response': [[0.007663827, -0.030877046, ... -0.035327386]], 
+# {'response': [[0.007663827, -0.030877046, ... -0.035327386]],
 #  'numberOfTokensInPrompt': 8, 'numberOfTokensInResponse': 0}
 
 # integrate with langchain
@@ -71,6 +73,7 @@ output = langhchain_llm.invoke(input = question)
 ```
 
 ### Interact with a Vector Database by adding document(s), querying, and removing document(s)
+
 ```python
 # import the vector engine class for the ai_server package
 from ai_server import VectorEngine
@@ -104,7 +107,8 @@ langhchain_vector.similaritySearch(query = 'Sample Search Statement', k=5)
 
 ### Connect to Databases and execute create, read, and delete operations
 
-#### Run the passed string query against the engine.  The query passed must be in the structure that the specific engine implementation.
+#### Run the passed string query against the engine. The query passed must be in the structure that the specific engine implementation.
+
 ```python
 # import the database engine class for the ai_server package
 from ai_server import DatabaseEngine
@@ -113,14 +117,16 @@ from ai_server import DatabaseEngine
 database = DatabaseEngine(engine_id="4a1f9466-4e6d-49cd-894d-7d22182344cd", insight_id=server_connection.cur_insight)
 database.execQuery(query='SELECT PATIENT, HEIGHT, WEIGHT FROM diab LIMIT 4')
 ```
-|    |   PATIENT |   HEIGHT |   WEIGHT |
-|---:|----------:|---------:|---------:|
-|  0 |     20337 |       64 |      114 |
-|  1 |      3750 |       64 |      161 |
-|  2 |     40785 |       67 |      187 |
-|  3 |     12778 |       72 |      145 |
+
+|     | PATIENT | HEIGHT | WEIGHT |
+| --: | ------: | -----: | -----: |
+|   0 |   20337 |     64 |    114 |
+|   1 |    3750 |     64 |    161 |
+|   2 |   40785 |     67 |    187 |
+|   3 |   12778 |     72 |    145 |
 
 #### Run query operations against the engine. Query must be in the structure that the specific engine implementation
+
 ```python
 # insert statement
 database.insertData(query = 'INSERT INTO table_name (column1, column2, column3, ...) VALUES (value1, value2, value3, ...)')
@@ -139,6 +145,7 @@ langhchain_db.removeQuery(query = 'DELETE FROM table_name WHERE condition')
 ```
 
 ### Run Function Engines
+
 ```python
 # import the function engine class for the ai_server package
 from ai_server import FunctionEngine
@@ -151,6 +158,7 @@ function.execute({"lat":"37.540","lon":"77.4360"})
 ```
 
 ### Using REST API to pull data product from an Insight
+
 ```python
 # define the Project ID
 projectId = '30991037-1e73-49f5-99d3-f28210e6b95c'
@@ -165,16 +173,17 @@ sql = 'select * FROM DATA_PRODUCT_123'
 diabetes_df = server_connection.import_data_product(project_id = projectId, insight_id = inishgtId, sql = sql)
 diabetes_df.head()
 ```
-|    |   AGE |   PATIENT |   WEIGHT |
-|---:|------:|----------:|---------:|
-|  0 |    19 |      4823 |      119 |
-|  1 |    19 |     17790 |      135 |
-|  2 |    20 |      1041 |      159 |
-|  3 |    20 |      2763 |      274 |
-|  4 |    20 |      3750 |      161 |
 
+|     | AGE | PATIENT | WEIGHT |
+| --: | --: | ------: | -----: |
+|   0 |  19 |    4823 |    119 |
+|   1 |  19 |   17790 |    135 |
+|   2 |  20 |    1041 |    159 |
+|   3 |  20 |    2763 |    274 |
+|   4 |  20 |    3750 |    161 |
 
 ### Get the output or JSON response of any pixel
+
 ```python
 # run the pixel and get the output
 server_connection.run_pixel('1+1')
@@ -204,6 +213,79 @@ loginKeys = {"secretKey":"<your_secret_key>","accessKey":"<your_access_key>"}
 server_connection = ServerClient(access_key=loginKeys['accessKey'], secret_key=loginKeys['secretKey'], base='<Your deployed server Monolith URL>')
 
 server_connection.upload_files(files=["path_to_local_file1", "path_to_local_file2"], project_id="your_project_id", insight_id="your_insight_id", path="path_to_upload_files_in_insight")
+```
+
+### Using tools via langchain
+
+```python
+
+import ai_server
+from ai_server import ModelEngine
+from langchain_core.messages import HumanMessage
+from langchain_core.tools import tool
+
+loginKeys = {"secretKey":"<your_secret_key>","accessKey":"<your_access_key>"}
+
+# create connection object by passing in the secret key, access key and base url for the api
+server_connection = ServerClient(base='<Your deployed server Monolith URL>', access_key=loginKeys['accessKey'], secret_key=loginKeys['secretKey'])
+
+model = ModelEngine(
+    engine_id="4acbe913-df40-4ac0-b28a-daa5ad91b172",
+    insight_id=server_connection.cur_insight,
+)
+
+langchain_model = model.to_langchain_chat_model()
+
+@tool
+def multiply(a: int, b: int) -> int:
+    """Multiply a and b.
+
+    Args:
+        a: first int
+        b: second int
+    """
+    return a * b
+
+
+@tool
+def add(a: int, b: int) -> int:
+    """Adds a and b.
+
+    Args:
+        a: first int
+        b: second int
+    """
+    return a + b
+
+
+@tool
+def divide(a: int, b: int) -> float:
+    """Divide a and b.
+
+    Args:
+        a: first int
+        b: second int
+    """
+    return a / b
+
+
+tools = [add, multiply, divide]
+
+query = "What is 3 * 12?"
+messages = [HumanMessage(query)]
+
+langchain_chat_with_tools = langchain_model.bind_tools(tools)
+result = langchain_chat_with_tools.invoke(messages)
+messages.append(result)
+
+for tool_call in result.tool_calls:
+    selected_tool = {"add": add, "multiply": multiply}[tool_call["name"].lower()]
+    tool_msg = selected_tool.invoke(tool_call)
+    messages.append(tool_msg)
+
+final_output = langchain_chat_with_tools.invoke(messages)
+print(final_output)
+
 ```
 
 ---
