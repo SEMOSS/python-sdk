@@ -56,6 +56,10 @@ model.ask(question = 'What is the capital of France?')
 #  'roomId': '28261853-0e41-49b0-8a50-df34e8c62a19',
 #  'numberOfTokensInResponse': 6, 'numberOfTokensInPrompt': 6}
 
+# stream the response
+for chunk in model.stream_ask(question=question):
+    print(chunk, end="", flush=True)
+
 # instantiate a different model for embeddings, get embeddings for some text
 model = ModelEngine(engine_id="e4449559-bcff-4941-ae72-0e3f18e06660", insight_id=server_connection.cur_insight)
 model.embeddings(strings_to_embed=['text1','text2'])
@@ -65,11 +69,16 @@ model.embeddings(strings_to_embed=['text1','text2'])
 
 # integrate with langchain
 model = ModelEngine(engine_id="2c6de0ff-62e0-4dd0-8380-782ac4d40245", insight_id=server_connection.cur_insight)
-langhchain_llm = model.to_langchain_chat_model()
+langchain_llm = model.to_langchain_chat_model()
 question = 'what is the capital of france?'
-output = langhchain_llm.invoke(input = question)
+output = langchain_llm.invoke(input = question)
 # example output
 # AIMessage(content='The capital of France is Paris.', additional_kwargs={}, response_metadata={'numberOfTokensInResponse': 6, 'numberOfTokensInPrompt': 6, 'messageType': 'CHAT', 'messageId': 'bd4f54fe-fd9b-4538-8531-696c4cdae01f', 'roomId': '57c03aae-5c10-498e-9a25-027201daa917'}, id='run-e9672e53-0cfd-4cb6-b9e4-3d5304314f73-0')
+
+# stream the response
+for chunk in langchain_llm.stream(question):
+    print(chunk.content, end="", flush=True)
+
 ```
 
 ### Interact with a Vector Database by adding document(s), querying, and removing document(s)
