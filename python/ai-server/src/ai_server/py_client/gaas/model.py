@@ -252,7 +252,6 @@ class ModelEngine(ServerProxy):
             HumanMessage,
             AIMessageChunk
         )
-        from collections.abc import Iterator
         from collections.abc import Sequence
         from langchain_core.tools import BaseTool
         from typing import Callable
