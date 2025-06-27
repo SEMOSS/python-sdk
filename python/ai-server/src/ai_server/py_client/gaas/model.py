@@ -244,13 +244,21 @@ class ModelEngine(ServerProxy):
         from langchain_core.outputs import (
             ChatGeneration,
             ChatResult,
+<<<<<<< Updated upstream
             ChatGenerationChunk,
+=======
+            ChatGenerationChunk
+>>>>>>> Stashed changes
         )
         from langchain_core.messages import (
             AIMessage,
             BaseMessage,
             HumanMessage,
+<<<<<<< Updated upstream
             AIMessageChunk,
+=======
+            AIMessageChunk
+>>>>>>> Stashed changes
         )
         from collections.abc import Iterator
         from collections.abc import Sequence
@@ -325,6 +333,39 @@ class ModelEngine(ServerProxy):
                 response = self.model_engine.ask(question="", param_dict=param_dict)
 
                 return self._create_chat_result(response=response)
+
+            def _stream(
+                self,
+                messages: List[BaseMessage],
+                stop: Optional[List[str]] = None,
+                **kwargs: Any,
+            ):
+                # Combine history with new messages
+                history = self.get_chat_history()
+                full_msgs = history + messages if history else messages
+
+                # Build the full_prompt
+                full_prompt = self.convert_messages_to_full_prompt(full_msgs)
+                params: Dict[str, Any] = {
+                    **kwargs,
+                    "full_prompt": full_prompt,
+                    "stream": True,
+                }
+                if kwargs.get("tools"):
+                    params["tools"] = self.convert_tools_to_list_dict(kwargs.pop("tools"))
+
+                # Call your stream_ask generator
+                for part in self.model_engine.stream_ask(question="", param_dict=params):
+                    if isinstance(part, dict):
+                        text = part.get("response", "")
+                    else:
+                        text = str(part)
+
+                    # Yield a proper ChatGenerationChunk
+                    yield ChatGenerationChunk(
+                        message=AIMessageChunk(content=text),
+                        generation_info={},
+                    )
 
             def _create_chat_result(self, response: Dict[str, Any]) -> ChatResult:
                 generations = []
