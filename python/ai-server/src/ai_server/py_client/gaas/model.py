@@ -120,8 +120,8 @@ class ModelEngine(ServerProxy):
                 payload=pixel, insight_id=insight_id, full_response=True
             )
         ):
-            if message and message.strip():
-                yield message
+            
+            yield message
 
     def embeddings(
         self,
@@ -400,42 +400,6 @@ class ModelEngine(ServerProxy):
                 generations.append(gen)
 
                 return ChatResult(generations=generations, llm_output=response)
-
-            def _stream(
-                self, messages, stop=None, run_manager=None, **kwargs
-            ) -> Iterator[ChatGenerationChunk]:
-                """Top Level call"""
-                history = self.get_chat_history()
-
-                # Combine history with new messages (if history exists)
-                full_messages = history + messages if history else messages
-
-                # Convert to appropriate prompt format
-                full_prompt = self.convert_messages_to_full_prompt(full_messages)
-
-                # Remove non-serializable LangChain runtime keys
-                filtered_kwargs = {
-                    k: v
-                    for k, v in kwargs.items()
-                    if k not in {"callbacks", "run_manager"}
-                }
-                param_dict = {**filtered_kwargs, "full_prompt": full_prompt}
-                if kwargs.get("tools") is not None:
-                    # Convert tools to json string
-                    processed_tools = self.convert_tools_to_list_dict(
-                        kwargs.pop("tools")
-                    )
-                    param_dict["tools"] = processed_tools
-
-                # Send the combined prompt to the model
-                response = self.model_engine.stream_ask(
-                    question="", param_dict=param_dict
-                )
-
-                for stream_message in response:
-                    yield ChatGenerationChunk(
-                        message=AIMessageChunk(content=stream_message)
-                    )
 
             def convert_messages_to_full_prompt(
                 self,
