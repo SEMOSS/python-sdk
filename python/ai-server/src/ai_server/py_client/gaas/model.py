@@ -244,21 +244,13 @@ class ModelEngine(ServerProxy):
         from langchain_core.outputs import (
             ChatGeneration,
             ChatResult,
-<<<<<<< Updated upstream
-            ChatGenerationChunk,
-=======
             ChatGenerationChunk
->>>>>>> Stashed changes
         )
         from langchain_core.messages import (
             AIMessage,
             BaseMessage,
             HumanMessage,
-<<<<<<< Updated upstream
-            AIMessageChunk,
-=======
             AIMessageChunk
->>>>>>> Stashed changes
         )
         from collections.abc import Iterator
         from collections.abc import Sequence
