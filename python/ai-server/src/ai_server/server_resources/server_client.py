@@ -314,18 +314,11 @@ class ServerClient:
         else:
             return self.get_pixel_output(response_dict)
 
-    def run_pixel_separate_thread(
-        self,
-        payload: str,
-        insight_id: Optional[str] = None,
-        full_response: Optional[bool] = False,
-    ) -> str:
+    def run_pixel_async(self, payload: str, insight_id: Optional[str] = None):
         """
-        This is really a run_pixel in a separate thread.
+        Send a pixel payload to the platforms /api/engine/runPixelAsync endpoint.
 
-        Send a pixel payload to the platforms /api/engine/runPixel endpoint.
-
-        /api/engine/runPixel is the AI server's primary endpoint that consumes a flexible payload. The payload must contain two parameters, namely:
+        /api/engine/runPixelAsync is the AI server's primary endpoint that consumes a flexible payload. The payload must contain two parameters, namely:
             1.) expression - The @payload passed is placed here and must comply and be defined in the Server's DSL (Pixel) which dictates what action should be taken
 
             2.) insightId - the temporal workspace identifier which isoloates the actions being performed
@@ -336,21 +329,77 @@ class ServerClient:
                 - insight_id = '' -> Creates a temporary one time insight created but is not stored /     cannot be referenced for future state
                 - insight_id = 'new' -> Creates a new insight which can be referenced in the same sesssion
                 - insight_id = '<uuid/guid string>' -> Uses an existing insight id that exists in the user session
-            full_response (`bool`): Indicate whether to return the full json response or only the actions output
 
         Returns:
-            `String`: The insight id to be used for partial responses
+            `Union[Any, Dict]`: The output object from the runPixelAsync containing the jobId
         """
-        threading.Thread(
-            target=self.run_pixel,
-            kwargs={
-                "payload": payload,
-                "insight_id": insight_id,
-                "full_response": full_response,
-            },
-        ).start()
+        # going to create an insight if insight not available
+        if not self.connected:
+            return "Please login"
 
-        return insight_id
+        if insight_id is None:
+            insight_id = self.cur_insight
+            if insight_id is None:
+                # the insight_id is still null
+                logger.info(
+                    "insight_id and self.cur_insight are both undefined. Creating new insight"
+                )
+                self.cur_insight = self.make_new_insight()
+                insight_id = self.cur_insight
+
+        logger.info(f"Current insight_id is set to {insight_id}")
+
+        pixel_payload = {"expression": payload, "insightId": insight_id}
+
+        api_url = "/engine/runPixelAsync"
+        response = requests.post(
+            self.main_url + api_url,
+            cookies=self.cookies,
+            data=pixel_payload,
+            headers=self.required_headers,
+        )
+
+        response_dict = response.json()
+        logger.info(response_dict)
+        return response_dict.get("jobId")
+
+    # def run_pixel_separate_thread(
+    #     self,
+    #     payload: str,
+    #     insight_id: Optional[str] = None,
+    #     full_response: Optional[bool] = False,
+    # ) -> str:
+    #     """
+    #     This is really a run_pixel in a separate thread.
+
+    #     Send a pixel payload to the platforms /api/engine/runPixel endpoint.
+
+    #     /api/engine/runPixel is the AI server's primary endpoint that consumes a flexible payload. The payload must contain two parameters, namely:
+    #         1.) expression - The @payload passed is placed here and must comply and be defined in the Server's DSL (Pixel) which dictates what action should be taken
+
+    #         2.) insightId - the temporal workspace identifier which isoloates the actions being performed
+
+    #     Args:
+    #         payload (`str`): DSL (Pixel) instruction on what specific action should be performed
+    #         insight_id (`str`): Unique identifier for the temporal worksapce where actions are being isolated. Options are:
+    #             - insight_id = '' -> Creates a temporary one time insight created but is not stored /     cannot be referenced for future state
+    #             - insight_id = 'new' -> Creates a new insight which can be referenced in the same sesssion
+    #             - insight_id = '<uuid/guid string>' -> Uses an existing insight id that exists in the user session
+    #         full_response (`bool`): Indicate whether to return the full json response or only the actions output
+
+    #     Returns:
+    #         `String`: The insight id to be used for partial responses
+    #     """
+    #     threading.Thread(
+    #         target=self.run_pixel,
+    #         kwargs={
+    #             "payload": payload,
+    #             "insight_id": insight_id,
+    #             "full_response": full_response,
+    #         },
+    #     ).start()
+
+    #     return insight_id
 
     def get_partial_responses(self, job_id: str) -> Generator:
         """
@@ -371,8 +420,15 @@ class ServerClient:
             "jobId": job_id,
         }
 
-        # keep track of when the streams start coming since it could be delayed
         started_streaming = False
+        terminal_statuses = {
+            "ProgressComplete",
+            "Complete",
+            "Error",
+            "UnknownJob",
+            "Canceled",
+        }
+
         while True:
             response = requests.post(
                 partial_endpoint,
@@ -380,16 +436,20 @@ class ServerClient:
                 data=payload,
                 headers=self.required_headers,
             ).json()
-            msg = response.get("message")
-            msg_length = len(msg) if msg is not None else 0
 
-            if msg_length != 0 and not started_streaming:
-                started_streaming = True
-                yield msg["new"]
-            elif msg_length != 0:
-                yield msg["new"]
-            elif msg_length == 0 and started_streaming:
+            msg = response.get("message", {})
+            status = response.get("status")
+            new_chunk = msg.get("new", "")
+
+            if new_chunk:
+                if not started_streaming:
+                    started_streaming = True
+                yield new_chunk
+            elif started_streaming and status in terminal_statuses:
                 break
+            elif status in {"Error", "UnknownJob", "Canceled"}:
+                # Optionally raise if these are unexpected
+                raise RuntimeError(f"Stream failed or canceled. Status: {status}")
 
     def get_pixel_output(self, response: Dict) -> Union[Any, List]:
         """
