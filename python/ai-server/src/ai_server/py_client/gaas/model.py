@@ -116,9 +116,7 @@ class ModelEngine(ServerProxy):
         pixel = f'LLM(engine="{self.engine_id}", command="<encode>{question}</encode>", useHistory={use_history_param}{optionalContext}{optionalParamDict});'
 
         for message in self.server.get_partial_responses(
-            self.server.run_pixel_separate_thread(
-                payload=pixel, insight_id=insight_id, full_response=True
-            )
+            self.server.run_pixel_async(payload=pixel, insight_id=insight_id)
         ):
             if message and message.strip():
                 yield message
