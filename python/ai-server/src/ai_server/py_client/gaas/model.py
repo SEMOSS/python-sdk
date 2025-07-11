@@ -22,27 +22,23 @@ class ModelEngine(ServerProxy):
         insight_id: Optional[str] = None,
         param_dict: Optional[Dict] = None,
     ) -> List[Dict]:
-        """
-        Ask a question to a text-generation model hosted on the ai server.
+        """Sends a question to a text-generation model and returns the response.
 
         Args:
-            question (`str`):
-                The single string question you are asking a an LLM
-            context (`str`):
-                Set the given context string for an interaction with an LLM
-            insight_id (`str`):
-                Unique identifier for the temporal worksapce where actions are being isolated
-            param_dict (`dict`):
-                Additional inference params like temperature, max new tokens and top_k etc
+            question: The question to ask the model.
+            context: Optional; Additional context to provide to the model.
+            use_history: Optional; If True, the model will use the conversation history.
+                         Defaults to True.
+            insight_id: Optional; The unique identifier for the temporal workspace.
+                        If None, the session's default insight_id is used.
+            param_dict: Optional; A dictionary of additional parameters for the model,
+                        such as temperature, max_new_tokens, etc.
 
-                *NOTE* you can pass in
-                param_dict = {"full_prompt":full_prompt, "temperature":temp, "max_new_tokens":max_token}
-                where full_prompt is the an multi faceted prompt construct before sending the payload
+        Returns:
+            A list of dictionaries containing the model's response.
 
-                For OpenAI, this would be a list of dictionaris where the only keys within each dictionary are 'role' and 'content'
-                For TextGen, this could be a list simialr to OpenAI or a complete string that has all the pieces pre constructed
-        Response:
-            `Union[Dict, Generator]`: A list that contains a dictioanry with the answer to the question, insight id and the message id
+        Raises:
+            RuntimeError: If the server returns an error.
         """
         if insight_id is None:
             insight_id = self.insight_id
@@ -77,27 +73,23 @@ class ModelEngine(ServerProxy):
         insight_id: Optional[str] = None,
         param_dict: Optional[Dict] = None,
     ) -> Generator:
-        """
-        Stream responses from a question asked to a text-generation model hosted on the ai server.
+        """Streams the response from a text-generation model.
 
         Args:
-            question (`str`):
-                The single string question you are asking a an LLM
-            context (`str`):
-                Set the given context string for an interaction with an LLM
-            insight_id (`str`):
-                Unique identifier for the temporal worksapce where actions are being isolated
-            param_dict (`dict`):
-                Additional inference params like temperature, max new tokens and top_k etc
+            question: The question to ask the model.
+            context: Optional; Additional context to provide to the model.
+            use_history: Optional; If True, the model will use the conversation history.
+                         Defaults to True.
+            insight_id: Optional; The unique identifier for the temporal workspace.
+                        If None, the session's default insight_id is used.
+            param_dict: Optional; A dictionary of additional parameters for the model,
+                        such as temperature, max_new_tokens, etc.
 
-                *NOTE* you can pass in
-                param_dict = {"full_prompt":full_prompt, "temperature":temp, "max_new_tokens":max_token}
-                where full_prompt is the an multi faceted prompt construct before sending the payload
+        Yields:
+            A generator that yields the model's response in chunks.
 
-                For OpenAI, this would be a list of dictionaris where the only keys within each dictionary are 'role' and 'content'
-                For TextGen, this could be a list simialr to OpenAI or a complete string that has all the pieces pre constructed
-        Response:
-            `Generator`: A generator to iterate through to get the partial responses
+        Raises:
+            RuntimeError: If the server returns an error.
         """
         if insight_id is None:
             insight_id = self.insight_id
@@ -127,19 +119,19 @@ class ModelEngine(ServerProxy):
         insight_id: Optional[str] = None,
         param_dict: Optional[Dict] = None,
     ) -> Dict:
-        """
-        Pass in a list of strings to an embeddings model and get a list of vectors.
+        """Generates embeddings for a list of strings.
 
         Args:
-            question (`str`):
-                A user's access key is a unique identifier used for authentication and authorization. It will allow users or applications to access specific resources or perform designated actions within an ai-server instance.
-            insight_id (`str`):
-                Unique identifier for the temporal worksapce where actions are being isolated
-            param_dict (`dict`):
-                Optional
+            strings_to_embed: A list of strings to embed.
+            insight_id: Optional; The unique identifier for the temporal workspace.
+                        If None, the session's default insight_id is used.
+            param_dict: Optional; A dictionary of additional parameters for the model.
 
-        Returns
+        Returns:
+            A dictionary containing the embeddings.
 
+        Raises:
+            RuntimeError: If the server returns an error.
         """
         if isinstance(strings_to_embed, str):
             strings_to_embed = [strings_to_embed]
@@ -174,7 +166,14 @@ class ModelEngine(ServerProxy):
         return self.engine_id
 
     def get_model_type(self) -> str:
-        """Return the serving mechanism of this model"""
+        """Gets the model's API type.
+
+        Returns:
+            The model's API type (e.g., "OPEN_AI", "VERTEX").
+
+        Raises:
+            RuntimeError: If the server returns an error.
+        """
         insight_id = self.insight_id
         pixel = f'GetModelAPI(model="{self.engine_id}");'
 
@@ -188,17 +187,17 @@ class ModelEngine(ServerProxy):
         return output_payload_message["pixelReturn"][0]["output"]
 
     def get_conversation_history(self, insight_id: Optional[str] = None) -> List[Dict]:
-        """This method is responsible to get message history back from the model logs database.
+        """Gets the conversation history for a given insight.
 
         Args:
-            - insight_id (Optional[str]): Identifier for insights.
+            insight_id: Optional; The unique identifier for the temporal workspace.
+                        If None, the session's default insight_id is used.
 
         Returns:
-            `List[Dict]`: A dictionary with the response the model logs database. The dictionary in the response will contain the following keys:
-            - MESSAGE_DATA
-            - DATE_CREATED
-            - MESSAGE_ID
-            - MESSAGE_TYPE
+            A list of dictionaries representing the conversation history.
+
+        Raises:
+            RuntimeError: If the server returns an error.
         """
 
         if insight_id is None:

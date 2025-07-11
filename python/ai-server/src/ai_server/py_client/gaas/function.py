@@ -20,11 +20,18 @@ class FunctionEngine(ServerProxy):
         return self.engine_id
 
     def execute(self, parameterMap: dict, insight_id: Optional[str] = None) -> None:
-        """
-        Connect to a function and execute
+        """Executes a function on the function engine.
 
         Args:
-            parameterMap (`dict`): A dictionary with the payload for the function engine
+            parameterMap: A dictionary containing the parameters for the function.
+            insight_id: Optional; The unique identifier for the temporal workspace.
+                        If None, the session's default insight_id is used.
+
+        Returns:
+            The output from the server.
+
+        Raises:
+            RuntimeError: If the server returns an error during execution.
         """
         if insight_id is None:
             insight_id = self.insight_id
