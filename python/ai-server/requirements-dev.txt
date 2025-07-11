@@ -1,8 +1,9 @@
 requests
 pandas
 jsonpickle
-langchain==0.3.23
-langchain_community==0.3.21
+langchain
+langchain-community
+langchain-core
 python-dotenv
 openai
 python-dotenv

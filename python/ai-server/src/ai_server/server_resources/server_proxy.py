@@ -20,10 +20,8 @@ class ServerProxy:
         from ai_server.server_resources.server_client import ServerClient
 
         self.server = ServerClient.da_server
-        assert (
-            self.server is not None
-        ), "Please authenticate using your access and secret keys"
-        logger.info("Server is set")
+        if not self.server:
+            raise Exception("Please authenticate using your access and secret keys.")
 
     def get_next_epoc(self) -> str:
         """This method atomically increments the epoc count by one plus the current value."""
@@ -116,7 +114,6 @@ class ServerProxy:
         )
 
         new_payload_struct = self.server.monitors.pop(epoc)
-        logger.info(new_payload_struct)
 
         if "ex" in new_payload_struct:
             # if exception, convert it to an Exception and raise it

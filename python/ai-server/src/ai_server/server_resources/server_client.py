@@ -1,11 +1,9 @@
 from typing import Any, List, Dict, Union, Optional, Set, Generator
-
 import requests
 import json
 import pandas as pd
 import base64
 import logging
-import threading
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -158,13 +156,8 @@ class ServerClient:
             "Bearer-Provider": self.bearer_token_provider,
         }
         self.auth_headers: Dict = headers.copy()
-        logger.info(self.auth_headers)
 
-        # authentication url
-        api_url = "/auth/whoami"
-        url = self.main_url + api_url
-
-        self.r = requests.get(url, headers=headers)
+        self.r = requests.get(url=self.main_url + "/auth/whoami", headers=headers)
 
         self.r.raise_for_status()
 
@@ -176,7 +169,8 @@ class ServerClient:
         if "errorMessage" in json_response:
             if json_response["errorMessage"] == "null principal":
                 raise AuthenticationError(
-                    url
+                    self.main_url
+                    + "/auth/whoami"
                     + f" USERID = INVALID could not login using user with bearer token '{self.bearer_token}'"
                 )
 
@@ -245,11 +239,8 @@ class ServerClient:
         response.raise_for_status()
 
         json_output = response.json()
-        logger.info(json_output)
         self.cur_insight = json_output["insightID"]
         self.open_insights.add(self.cur_insight)
-
-        logger.info(f"Current open insights are -- {self.open_insights}")
 
         return self.cur_insight
 
@@ -264,7 +255,6 @@ class ServerClient:
 
         /api/engine/runPixel is the AI server's primary endpoint that consumes a flexible payload. The payload must contain two parameters, namely:
             1.) expression - The @payload passed is placed here and must comply and be defined in the Server's DSL (Pixel) which dictates what action should be taken
-
             2.) insightId - the temporal workspace identifier which isoloates the actions being performed
 
         Args:
@@ -278,34 +268,25 @@ class ServerClient:
         Returns:
             `Union[Any, Dict]`: The output object from the runPixel response or the entire runPixel response.
         """
-        # going to create an insight if insight not available
         if not self.connected:
             return "Please login"
 
         if insight_id is None:
             insight_id = self.cur_insight
             if insight_id is None:
-                # the insight_id is still null
-                logger.info(
-                    "insight_id and self.cur_insight are both undefined. Creating new insight"
-                )
                 self.cur_insight = self.make_new_insight()
                 insight_id = self.cur_insight
 
-        logger.info(f"Current insight_id is set to {insight_id}")
-
         pixel_payload = {"expression": payload, "insightId": insight_id}
 
-        api_url = "/engine/runPixel"
         response = requests.post(
-            self.main_url + api_url,
+            self.main_url + "/engine/runPixel",
             cookies=self.cookies,
             data=pixel_payload,
             headers=self.required_headers,
         )
 
         response_dict = response.json()
-        logger.info(response_dict)
         if "ERROR" in response_dict["pixelReturn"][0]["operationType"]:
             raise Exception(response_dict["pixelReturn"][0]["output"])
 
@@ -314,13 +295,14 @@ class ServerClient:
         else:
             return self.get_pixel_output(response_dict)
 
-    def run_pixel_async(self, payload: str, insight_id: Optional[str] = None):
+    def run_pixel_async(
+        self, payload: str, insight_id: Optional[str] = None
+    ) -> Union[Any, dict]:
         """
         Send a pixel payload to the platforms /api/engine/runPixelAsync endpoint.
 
         /api/engine/runPixelAsync is the AI server's primary endpoint that consumes a flexible payload. The payload must contain two parameters, namely:
             1.) expression - The @payload passed is placed here and must comply and be defined in the Server's DSL (Pixel) which dictates what action should be taken
-
             2.) insightId - the temporal workspace identifier which isoloates the actions being performed
 
         Args:
@@ -333,92 +315,38 @@ class ServerClient:
         Returns:
             `Union[Any, Dict]`: The output object from the runPixelAsync containing the jobId
         """
-        # going to create an insight if insight not available
         if not self.connected:
             return "Please login"
 
         if insight_id is None:
             insight_id = self.cur_insight
             if insight_id is None:
-                # the insight_id is still null
-                logger.info(
-                    "insight_id and self.cur_insight are both undefined. Creating new insight"
-                )
                 self.cur_insight = self.make_new_insight()
                 insight_id = self.cur_insight
 
-        logger.info(f"Current insight_id is set to {insight_id}")
-
         pixel_payload = {"expression": payload, "insightId": insight_id}
 
-        api_url = "/engine/runPixelAsync"
         response = requests.post(
-            self.main_url + api_url,
+            self.main_url + "/engine/runPixelAsync",
             cookies=self.cookies,
             data=pixel_payload,
             headers=self.required_headers,
         )
 
         response_dict = response.json()
-        logger.info(response_dict)
         return response_dict.get("jobId")
-
-    # def run_pixel_separate_thread(
-    #     self,
-    #     payload: str,
-    #     insight_id: Optional[str] = None,
-    #     full_response: Optional[bool] = False,
-    # ) -> str:
-    #     """
-    #     This is really a run_pixel in a separate thread.
-
-    #     Send a pixel payload to the platforms /api/engine/runPixel endpoint.
-
-    #     /api/engine/runPixel is the AI server's primary endpoint that consumes a flexible payload. The payload must contain two parameters, namely:
-    #         1.) expression - The @payload passed is placed here and must comply and be defined in the Server's DSL (Pixel) which dictates what action should be taken
-
-    #         2.) insightId - the temporal workspace identifier which isoloates the actions being performed
-
-    #     Args:
-    #         payload (`str`): DSL (Pixel) instruction on what specific action should be performed
-    #         insight_id (`str`): Unique identifier for the temporal worksapce where actions are being isolated. Options are:
-    #             - insight_id = '' -> Creates a temporary one time insight created but is not stored /     cannot be referenced for future state
-    #             - insight_id = 'new' -> Creates a new insight which can be referenced in the same sesssion
-    #             - insight_id = '<uuid/guid string>' -> Uses an existing insight id that exists in the user session
-    #         full_response (`bool`): Indicate whether to return the full json response or only the actions output
-
-    #     Returns:
-    #         `String`: The insight id to be used for partial responses
-    #     """
-    #     threading.Thread(
-    #         target=self.run_pixel,
-    #         kwargs={
-    #             "payload": payload,
-    #             "insight_id": insight_id,
-    #             "full_response": full_response,
-    #         },
-    #     ).start()
-
-    #     return insight_id
 
     def get_partial_responses(self, job_id: str) -> Generator:
         """
-        Make continuois post requests to the partial endpoint until we see a change in the message state
-
+        Make continuous post requests to the partial endpoint until we see a change in the message state
         Args:
             job_id (`str`): The identifier of the job being run
-
         Returns:
             `Generator`: A generator that can be iterated through to get partials
         """
 
-        assert job_id is not None, "Please provide a valid job ID."
-
-        partial_endpoint = self.main_url + "/engine/partial"
-        cookies = self.cookies
-        payload = {
-            "jobId": job_id,
-        }
+        if not job_id:
+            raise ValueError("Job ID must be provided to get partial responses.")
 
         started_streaming = False
         terminal_statuses = {
@@ -431,9 +359,9 @@ class ServerClient:
 
         while True:
             response = requests.post(
-                partial_endpoint,
-                cookies=cookies,
-                data=payload,
+                url=self.main_url + "/engine/partial",
+                cookies=self.cookies,
+                data={"jobId": job_id},
                 headers=self.required_headers,
             ).json()
 
@@ -448,7 +376,6 @@ class ServerClient:
             elif started_streaming and status in terminal_statuses:
                 break
             elif status in {"Error", "UnknownJob", "Canceled"}:
-                # Optionally raise if these are unexpected
                 raise RuntimeError(f"Stream failed or canceled. Status: {status}")
 
     def get_pixel_output(self, response: Dict) -> Union[Any, List]:
@@ -508,9 +435,7 @@ class ServerClient:
     def get_open_insights(self) -> List[str]:
         """
         Retrieves a list of insight IDs created after establishing the connection.
-
         Args:
-
         Returns:
             `List[str]`: List of insight IDs
         """
@@ -526,10 +451,8 @@ class ServerClient:
     def drop_insights(self, insight_ids: Union[str, List[str]]) -> None:
         """
         Utility method to close insight(s). By default, if the the current/working insight is closed, then we will attempt to set to the first insight in open_insights as the current insight
-
         Args:
             insight_ids (`str` | `list`): a single insight or a list of insights the user wishes to close
-
         Returns:
             `None`
         """
