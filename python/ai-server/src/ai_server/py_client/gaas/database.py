@@ -1,6 +1,7 @@
 from typing import Optional
 import logging
 from ai_server.server_resources.server_proxy import ServerProxy
+import pandas as pd
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -20,19 +21,25 @@ class DatabaseEngine(ServerProxy):
         insight_id: Optional[str] = None,
         return_pandas: Optional[bool] = True,
         server_output_format: Optional[str] = "json",
-    ):
-        """
-        Connect to a database an execute SQL against it to create a pandas frame
+    ) -> "pd.DataFrame | dict | str":
+        """Executes a query against the database engine.
 
         Args:
-            query (`str`):
-                A user's access key is a unique identifier used for authentication and authorization. It will allow users or applications to access specific resources or perform designated actions within an ai-server instance.
-            insight_id (`str`):
-                Unique identifier for the temporal worksapce where actions are being isolated
-            return_pandas (`bool`):
-                true/false flag for creating a pandas frame
-            server_output_format (`str`):
-                Define wheter to write the query result to a file or json. *Note*, if file is selected then its only accessible via server UI
+            query: The SQL SELECT query to execute.
+            insight_id: Optional; The unique identifier for the temporal workspace.
+                        If None, the session's default insight_id is used.
+            return_pandas: Optional; If True, returns the result as a pandas DataFrame.
+                           Defaults to True.
+            server_output_format: Optional; The format for the server to return data in,
+                                  either "json" or "file". Defaults to "json".
+
+        Returns:
+            If return_pandas is True, returns a pandas DataFrame.
+            Otherwise, returns a dictionary (for json format) or a string
+            containing the file path (for file format).
+
+        Raises:
+            RuntimeError: If the server returns an error during query execution.
         """
         if insight_id is None:
             insight_id = self.insight_id
@@ -51,8 +58,6 @@ class DatabaseEngine(ServerProxy):
 
         if return_pandas:
             logger.info(f"The output is {fileLoc}")
-            import pandas as pd
-
             logger.info(fileLoc)
             if isinstance(fileLoc, dict) and len(fileLoc) > 0:
                 rows = []
@@ -76,51 +81,67 @@ class DatabaseEngine(ServerProxy):
     def insertData(
         self, query: str, insight_id: Optional[str] = None, commit: bool = True
     ) -> None:
-        """
-        Connect to a database an execute SQL against it to insert data
+        """Executes an insert query against the database engine.
 
         Args:
-            query (`str`): A SQL statement to insert values into a table
-            insight_id (`Optional[str]`): Unique identifier for the temporal worksapce where actions are being isolated
-            commit (`bool`): commit to the database if autocommit is false. default is true
+            query: The SQL INSERT statement to execute.
+            insight_id: Optional; The unique identifier for the temporal workspace.
+                        If None, the session's default insight_id is used.
+            commit: Optional; If True, the transaction is committed. Defaults to True.
+
+        Raises:
+            RuntimeError: If the server returns an error during query execution.
         """
         return self.runQuery(query, insight_id, commit)
 
     def updateData(
         self, query: str, insight_id: Optional[str] = None, commit: bool = True
     ) -> None:
-        """
-        Connect to a database an execute SQL against it to update data
+        """Executes an update query against the database engine.
 
         Args:
-            query (`str`): A SQL statement to insert values into a table
-            insight_id (`Optional[str]`): Unique identifier for the temporal worksapce where actions are being isolated
-            commit (`bool`): commit to the database if autocommit is false. default is true
+            query: The SQL UPDATE statement to execute.
+            insight_id: Optional; The unique identifier for the temporal workspace.
+                        If None, the session's default insight_id is used.
+            commit: Optional; If True, the transaction is committed. Defaults to True.
+
+        Raises:
+            RuntimeError: If the server returns an error during query execution.
         """
         return self.runQuery(query, insight_id, commit)
 
     def removeData(
         self, query: str, insight_id: Optional[str] = None, commit: bool = True
     ) -> None:
-        """
-        Connect to a database an execute SQL against it to delete/remove data
+        """Executes a delete query against the database engine.
 
         Args:
-            query (`str`): A SQL statement like DELETE FROM diab WHERE age=19
-            insight_id (`Optional[str]`): Unique identifier for the temporal worksapce where actions are being isolated
-            commit (`bool`): commit to the database if autocommit is false. default is true
+            query: The SQL DELETE statement to execute.
+            insight_id: Optional; The unique identifier for the temporal workspace.
+                        If None, the session's default insight_id is used.
+            commit: Optional; If True, the transaction is committed. Defaults to True.
+
+        Raises:
+            RuntimeError: If the server returns an error during query execution.
         """
         return self.runQuery(query, insight_id, commit)
 
     def runQuery(
         self, query: str, insight_id: Optional[str] = None, commit: bool = True
     ):
-        """
-        This will execute the ExecQuery() reactor for a database
+        """A generic method to execute a query against the database engine.
 
         Args:
-        query (`str`): A SQL statement like DELETE FROM diab WHERE age=19
-        insight_id (`Optional[str]`): Unique identifier for the temporal worksapce where actions are being isolated
+            query: The SQL query to execute.
+            insight_id: Optional; The unique identifier for the temporal workspace.
+                        If None, the session's default insight_id is used.
+            commit: Optional; If True, the transaction is committed. Defaults to True.
+
+        Returns:
+            The output from the server.
+
+        Raises:
+            RuntimeError: If the server returns an error during query execution.
         """
 
         if insight_id is None:

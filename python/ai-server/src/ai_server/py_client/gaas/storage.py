@@ -28,15 +28,18 @@ class StorageEngine(ServerProxy):
         return output_payload_message["pixelReturn"][0]["output"]
 
     def list(self, storagePath: str, insight_id: Optional[str] = None):
-        """
-        This method is responsible for listing the files in the storage engine
+        """Lists the files and folders in a given storage path.
 
         Args:
-            storagePath (`str`): The path in the storage engine to list
-            insight_id (`Optional[str]`): Unique identifier for the temporal worksapce where actions are being isolated
+            storagePath: The path in the storage engine to list.
+            insight_id: Optional; The unique identifier for the temporal workspace.
+                        If None, the session's default insight_id is used.
 
         Returns:
-            list: list of files/folders in the given path of the storage engine
+            A list of files and folders in the specified path.
+
+        Raises:
+            RuntimeError: If the server returns an error.
         """
         pixel = (
             f'Storage("{self.engine_id}")|ListStoragePath(storagePath="{storagePath}");'
@@ -44,15 +47,18 @@ class StorageEngine(ServerProxy):
         return self.__execute_pixel(pixel, insight_id)
 
     def listDetails(self, storagePath: str, insight_id: Optional[str] = None):
-        """
-        This method is responsible for listing the files in the storage engine with extra details
+        """Lists the files and folders in a given storage path with additional details.
 
         Args:
-            storagePath (`str`): The path in the storage engine to list
-            insight_id (`Optional[str]`): Unique identifier for the temporal worksapce where actions are being isolated
+            storagePath: The path in the storage engine to list.
+            insight_id: Optional; The unique identifier for the temporal workspace.
+                        If None, the session's default insight_id is used.
 
         Returns:
-            list: list of files/folders in the given path of the storage engine with extra details
+            A list of files and folders with additional details.
+
+        Raises:
+            RuntimeError: If the server returns an error.
         """
         pixel = f'Storage("{self.engine_id}")|ListStoragePathDetails(storagePath="{storagePath}");'
         return self.__execute_pixel(pixel, insight_id)
@@ -65,18 +71,22 @@ class StorageEngine(ServerProxy):
         metadata: Optional[Dict] = {},
         insight_id: Optional[str] = None,
     ):
-        """
-        This method is responsible for syncing from insight/project/user space to cloud storage
+        """Syncs files from a local path to a storage path.
 
         Args:
-            storagePath (`str`): The path in the storage engine to sync into
-            localPath (`str`): The path in the application to sync from (insight, project, user space)
-            space (`str`): The space to use. None = current insight. Can be the project id or 'user' for the user specific space
-            metadata (`Optional[Dict]`): Define custom metadata associated with the files being moved to storage. Only available if the underlying storage system supports custom metadata.
-            insight_id (`Optional[str]`): Unique identifier for the temporal worksapce where actions are being isolated
+            storagePath: The destination path in the storage engine.
+            localPath: The source path in the local application.
+            space: Optional; The space to use (e.g., project ID, "user").
+                   If None, the current insight space is used.
+            metadata: Optional; A dictionary of metadata to associate with the files.
+            insight_id: Optional; The unique identifier for the temporal workspace.
+                        If None, the session's default insight_id is used.
 
         Returns:
-            boolean: true/false if this ran successfully
+            True if the sync is successful, False otherwise.
+
+        Raises:
+            RuntimeError: If the server returns an error.
         """
         spaceStr = f',space="{space}"' if space is not None else ""
         metadataStr = f",metadata=[{metadata}]" if metadata is not None else ""
@@ -91,17 +101,21 @@ class StorageEngine(ServerProxy):
         space: Optional[str] = None,
         insight_id: Optional[str] = None,
     ):
-        """
-        This method is responsible for syncing from cloud storage into the insight/project/user space
+        """Syncs files from a storage path to a local path.
 
         Args:
-            storagePath (`str`): The path in the storage engine to sync from
-            localPath (`str`): The path in the application to sync into (insight, project, user space)
-            space (`str`): The space to use. None = current insight. Can be the project id or 'user' for the user specific space
-            insight_id (`Optional[str]`): Unique identifier for the temporal worksapce where actions are being isolated
+            storagePath: The source path in the storage engine.
+            localPath: The destination path in the local application.
+            space: Optional; The space to use (e.g., project ID, "user").
+                   If None, the current insight space is used.
+            insight_id: Optional; The unique identifier for the temporal workspace.
+                        If None, the session's default insight_id is used.
 
         Returns:
-            boolean: true/false if this ran successfully
+            True if the sync is successful, False otherwise.
+
+        Raises:
+            RuntimeError: If the server returns an error.
         """
         spaceStr = f',space="{space}"' if space is not None else ""
         pixel = f'Storage("{self.engine_id}")|SyncStorageToLocal(storagePath="{storagePath}",filePath="{localPath}"{spaceStr});'
@@ -115,17 +129,21 @@ class StorageEngine(ServerProxy):
         space: Optional[str] = None,
         insight_id: Optional[str] = None,
     ):
-        """
-        This method is responsible for copying from cloud storage into the insight/project/user space
+        """Copies files from a storage path to a local path.
 
         Args:
-            storagePath (`str`): The path in the storage engine to pull from
-            localPath (`str`): The path in the application to copy into (insight, project, user space)
-            space (`str`): The space to use. None = current insight. Can be the project id or 'user' for the user specific space
-            insight_id (`Optional[str]`): Unique identifier for the temporal worksapce where actions are being isolated
+            storagePath: The source path in the storage engine.
+            localPath: The destination path in the local application.
+            space: Optional; The space to use (e.g., project ID, "user").
+                   If None, the current insight space is used.
+            insight_id: Optional; The unique identifier for the temporal workspace.
+                        If None, the session's default insight_id is used.
 
         Returns:
-            boolean: true/false if this ran successfully
+            True if the copy is successful, False otherwise.
+
+        Raises:
+            RuntimeError: If the server returns an error.
         """
         spaceStr = f',space="{space}"' if space is not None else ""
         pixel = f'Storage("{self.engine_id}")|PullFromStorage(storagePath="{storagePath}",filePath="{localPath}"{spaceStr});'
@@ -140,18 +158,22 @@ class StorageEngine(ServerProxy):
         metadata: Optional[Dict] = {},
         insight_id: Optional[str] = None,
     ):
-        """
-        This method is responsible for copying from insight/project/user space to cloud storage
+        """Copies files from a local path to a storage path.
 
         Args:
-            storagePath (`str`): The path in the storage engine to push into
-            localPath (`str`): The path in the application we are pushing to cloud storage (insight, project, user space)
-            space (`str`): The space to use. None = current insight. Can be the project id or 'user' for the user specific space
-            metadata (`Optional[Dict]`): Define custom metadata associated with the files being moved to storage. Only available if the underlying storage system supports custom metadata.
-            insight_id (`Optional[str]`): Unique identifier for the temporal worksapce where actions are being isolated
+            storagePath: The destination path in the storage engine.
+            localPath: The source path in the local application.
+            space: Optional; The space to use (e.g., project ID, "user").
+                   If None, the current insight space is used.
+            metadata: Optional; A dictionary of metadata to associate with the files.
+            insight_id: Optional; The unique identifier for the temporal workspace.
+                        If None, the session's default insight_id is used.
 
         Returns:
-            boolean: true/false if this ran successfully
+            True if the copy is successful, False otherwise.
+
+        Raises:
+            RuntimeError: If the server returns an error.
         """
         spaceStr = f',space="{space}"' if space is not None else ""
         metadataStr = f",metadata=[{metadata}]" if metadata is not None else ""
@@ -165,16 +187,20 @@ class StorageEngine(ServerProxy):
         leaveFolderStructure: Optional[bool] = False,
         insight_id: Optional[str] = None,
     ):
-        """
-        This method is responsible for deleting from a storage
+        """Deletes files from a storage path.
 
         Args:
-            storagePath (`str`): The path in the storage engine to delete
-            leaveFolderStructure (`bool`): If we should maintain the folder structure after deletion
-            insight_id (`Optional[str]`): Unique identifier for the temporal worksapce where actions are being isolated
+            storagePath: The path in the storage engine to delete.
+            leaveFolderStructure: Optional; If True, the folder structure is maintained after deletion.
+                                Defaults to False.
+            insight_id: Optional; The unique identifier for the temporal workspace.
+                        If None, the session's default insight_id is used.
 
         Returns:
-            boolean: true/false if this ran successfully
+            True if the deletion is successful, False otherwise.
+
+        Raises:
+            RuntimeError: If the server returns an error.
         """
         leaveFolderStructureStr = "true" if leaveFolderStructure else "false"
         pixel = f'Storage("{self.engine_id}")|DeleteFromStorage(storagePath="{storagePath}",leaveFolderStructure={leaveFolderStructureStr});'

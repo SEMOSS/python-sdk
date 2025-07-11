@@ -28,15 +28,19 @@ class VectorEngine(ServerProxy):
         param_dict: Optional[Dict] = {},
         insight_id: Optional[str] = None,
     ) -> bool:
-        """
-        This method is used to add documents to a vector database. The engine itself will determine how the the documents are
-        processed and the embeddings are created.
+        """Adds documents to the vector database.
 
         Args:
-            file_paths (`List[str]`): List of local files paths to push to the server and index.
-            space (`Optional[str]`): The app id for where the file exists. If not provided will assume current insight space.
-            param_dict (`Optional[Dict]`): Additional parameters the engine might need to process the documents.
-            insight_id (`Optional[str]`): The insight ID to upload the documents to and process the request. Default is to use the clients current insight.
+            file_paths: A list of local file paths to upload and index.
+            param_dict: Optional; A dictionary of additional parameters for processing the documents.
+            insight_id: Optional; The unique identifier for the temporal workspace.
+                        If None, the session's default insight_id is used.
+
+        Returns:
+            True if the documents are added successfully, False otherwise.
+
+        Raises:
+            RuntimeError: If the server returns an error.
         """
         if insight_id is None:
             if self.insight_id is None:
@@ -74,14 +78,21 @@ class VectorEngine(ServerProxy):
         param_dict: Optional[Dict] = {},
         insight_id: Optional[str] = None,
     ) -> bool:
-        """
-        Add the vector csv file format documents into the vector database
+        """Adds documents from a vector CSV file to the vector database.
 
         Args:
-            file_paths (`List[str]`):  The paths (relative to the insight_id or space) of the files to add.
-            space (`Optional[str]`): The app id for where the file exists. If not provided will assume current insight space.
-            param_dict (`Optional[dict]`): A dictionary with optional parameters for listing the documents (index class for FAISS as an example).
-            insight_id (`Optional[str]`): Unique identifier for the temporal worksapce where actions are being isolated.
+            file_paths: A list of file paths for the vector CSV files.
+            space: Optional; The space to use (e.g., project ID, "user").
+                   If None, the current insight space is used.
+            param_dict: Optional; A dictionary of additional parameters for processing the documents.
+            insight_id: Optional; The unique identifier for the temporal workspace.
+                        If None, the session's default insight_id is used.
+
+        Returns:
+            True if the documents are added successfully, False otherwise.
+
+        Raises:
+            RuntimeError: If the server returns an error.
         """
         assert file_paths is not None
         if insight_id is None:
@@ -115,13 +126,21 @@ class VectorEngine(ServerProxy):
         param_dict: Optional[Dict] = {},
         insight_id: Optional[str] = None,
     ) -> bool:
-        """
-        Remove the documents from the vector database
+        """Removes documents from the vector database.
 
         Args:
-            file_names (`List[str]`):  The names of the files to remove
-            param_dict (`dict`): A dictionary with optional parameters for listing the documents (index class for FAISS as an example)
-            insight_id (`Optional[str]`): Unique identifier for the temporal worksapce where actions are being isolated
+            file_names: A list of file names to remove.
+            space: Optional; The space to use (e.g., project ID, "user").
+                   If None, the current insight space is used.
+            param_dict: Optional; A dictionary of additional parameters for removing the documents.
+            insight_id: Optional; The unique identifier for the temporal workspace.
+                        If None, the session's default insight_id is used.
+
+        Returns:
+            True if the documents are removed successfully, False otherwise.
+
+        Raises:
+            RuntimeError: If the server returns an error.
         """
         assert file_names is not None
         if insight_id is None:
@@ -159,22 +178,25 @@ class VectorEngine(ServerProxy):
         param_dict: Optional[Dict] = {},
         insight_id: Optional[str] = None,
     ) -> List[Dict]:
-        """
-        Perform a nearest neighbor or semantic search against a vector database. The searchStatement will be
-        converted to a vector using the same embedding model utilized to create the document(s) embeddings.
+        """Performs a nearest neighbor search in the vector database.
 
         Args:
-            search_statement (`str`): The statement to search for semantic matches in the vector database
-            limit (`Optional[int]`): The amount of top matches to return
-            filters (`Optional[Dict]`): A dictionary of filters to apply to the search results
-            filters_str (`Optional[str]`): A string of filters to apply to the search results
-            metafilters (`Optional[Dict]`): A dictionary of metafilters to apply to the search results
-            metafilters_str (`Optional[str]`): A string of metafilters to apply to the search results
-            param_dict (`Optional[Dict]`): Additional parameters the engine might need to remove the documents.
-            insight_id (`Optional[str]`): The insight ID to upload the documents to and process the request. Default is to use the clients current insight.
+            search_statement: The text to search for.
+            limit: Optional; The maximum number of results to return. Defaults to 5.
+            filters: Optional; A dictionary or string of filters to apply to the search.
+            filters_str: Optional; A string of filters to apply to the search.
+            metafilters: Optional; A dictionary or string of metafilters to apply to the search.
+            metafilters_str: Optional; A string of metafilters to apply to the search.
+            param_dict: Optional; A dictionary of additional parameters for the search.
+            insight_id: Optional; The unique identifier for the temporal workspace.
+                        If None, the session's default insight_id is used.
 
         Returns:
-            `List[Dict]`: A list of dictionaries that contain the top semantic matches against the search statement
+            A list of dictionaries representing the search results.
+
+        Raises:
+            RuntimeError: If the server returns an error.
+            ValueError: If the filters or metafilters are not of the correct type.
         """
 
         if insight_id is None:
@@ -268,12 +290,18 @@ class VectorEngine(ServerProxy):
         param_dict: Optional[Dict] = {},
         insight_id: Optional[str] = None,
     ) -> List[Dict]:
-        """
-        List the documents in the vector database
+        """Lists the documents in the vector database.
 
         Args:
-            param_dict (`dict`): A dictionary with optional parameters for listing the documents (index class for FAISS as an example)
-            insight_id (`Optional[str]`): Unique identifier for the temporal worksapce where actions are being isolated
+            param_dict: Optional; A dictionary of additional parameters for listing the documents.
+            insight_id: Optional; The unique identifier for the temporal workspace.
+                        If None, the session's default insight_id is used.
+
+        Returns:
+            A list of dictionaries representing the documents.
+
+        Raises:
+            RuntimeError: If the server returns an error.
         """
         if insight_id is None:
             insight_id = self.insight_id

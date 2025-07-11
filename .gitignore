@@ -1,0 +1,19 @@
+# Byte-compiled / optimized / DLL files
+**/*.egg-info/
+**/*.py[cod]
+**/__pycache__
+
+# Virtual environments
+**/venv/
+**/.venv/
+
+# Test environment/config files
+**/tests/.env
+**/tests/test_playground/*
+!**/tests/test_playground/readme.md
+
+# macOS file
+**/.DS_Store
+
+# Compiled library
+**/dist/*
