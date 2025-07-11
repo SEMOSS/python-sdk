@@ -33,6 +33,11 @@ class ModelEngine(ServerProxy):
                         If None, the session's default insight_id is used.
             param_dict: Optional; A dictionary of additional parameters for the model,
                         such as temperature, max_new_tokens, etc.
+                        *NOTE* you can pass in
+                        param_dict = {"full_prompt":full_prompt, "temperature":temp, "max_new_tokens":max_token}
+                        where full_prompt is the an multi faceted prompt construct before sending the payload
+                        For OpenAI, this would be a list of dictionaris where the only keys within each dictionary are 'role' and 'content'
+                        For TextGen, this could be a list simialr to OpenAI or a complete string that has all the pieces pre constructed
 
         Returns:
             A list of dictionaries containing the model's response.
@@ -84,6 +89,11 @@ class ModelEngine(ServerProxy):
                         If None, the session's default insight_id is used.
             param_dict: Optional; A dictionary of additional parameters for the model,
                         such as temperature, max_new_tokens, etc.
+                        *NOTE* you can pass in
+                        param_dict = {"full_prompt":full_prompt, "temperature":temp, "max_new_tokens":max_token}
+                        where full_prompt is the an multi faceted prompt construct before sending the payload
+                        For OpenAI, this would be a list of dictionaris where the only keys within each dictionary are 'role' and 'content'
+                        For TextGen, this could be a list simialr to OpenAI or a complete string that has all the pieces pre constructed
 
         Yields:
             A generator that yields the model's response in chunks.

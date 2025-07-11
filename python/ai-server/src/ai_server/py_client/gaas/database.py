@@ -1,6 +1,7 @@
 from typing import Optional
 import logging
 from ai_server.server_resources.server_proxy import ServerProxy
+import pandas as pd
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -57,8 +58,6 @@ class DatabaseEngine(ServerProxy):
 
         if return_pandas:
             logger.info(f"The output is {fileLoc}")
-            import pandas as pd
-
             logger.info(fileLoc)
             if isinstance(fileLoc, dict) and len(fileLoc) > 0:
                 rows = []
