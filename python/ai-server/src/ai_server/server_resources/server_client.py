@@ -187,6 +187,28 @@ class ServerClient:
             return None, False
 
     def set_csrf_if_enabled(self):
+        """
+        Conditionally sets CSRF token for API requests based on server configuration.
+
+        This method checks if CSRF protection is enabled on the server by fetching
+        the configuration endpoint. If CSRF is enabled, it retrieves a CSRF token
+        and adds it to the required headers for subsequent requests.
+
+        The method performs the following steps:
+        1. Fetches the server configuration from /config endpoint
+        2. Checks if CSRF protection is enabled in the configuration
+        3. If enabled, requests a CSRF token from /config/fetchCsrf endpoint
+        4. Extracts the token from response headers and adds it to required_headers
+
+        Attributes Modified:
+            self.required_headers (dict): Updated with X-Csrf-Token header if CSRF is enabled
+
+        Raises:
+            requests.exceptions.HTTPError: If any HTTP request fails (status code >= 400)
+            requests.exceptions.RequestException: For network-related errors
+            ValueError: If the server response contains invalid JSON
+            KeyError: If expected configuration keys are missing
+        """
         config_url = self.main_url + "/config"
         try:
             resp = requests.get(config_url, cookies=getattr(self, "cookies", None))
@@ -215,9 +237,7 @@ class ServerClient:
                 logger.info("CSRF not enabled; continuing without CSRF header.")
         except Exception as e:
             logger.error(f"Could not fetch or parse config for csrf. Error: {str(e)}")
-            # No crash - just leave required_headers clear
 
-    # TODO add dec
     def get_auth_headers(self) -> Dict:
         """Get the autheroization headers used to authenticate the user"""
         return self.auth_headers
@@ -625,11 +645,11 @@ class ServerClient:
         else:
             insight_param = self.cur_insight
 
-        download_get_url = f"{self.main_url}/engine/downloadFile&insightId={insight_param}&fileKey={download_file_key}"
+        download_get_url = f"{self.main_url}/engine/downloadFile?insightId={insight_param}&fileKey={download_file_key}"
 
         # Make the GET request
-        response = requests.get(download_get_url, stream=True)
-        response.raise_for_status()  # Raise an exception for bad status codes
+        response = requests.get(download_get_url, cookies=self.cookies, stream=True)
+        response.raise_for_status()
 
         # Determine filename
         if custom_filename:
