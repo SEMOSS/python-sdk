@@ -1,9 +1,12 @@
-from typing import Any, List, Dict, Union, Optional, Set, Generator
+from typing import Any, List, Dict, Union, Optional, Set, Generator, Tuple
 import requests
 import json
 import pandas as pd
 import base64
 import logging
+from urllib.parse import urlparse, unquote
+from pathlib import Path
+import os
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -93,8 +96,6 @@ class ServerClient:
 
         # Perform CSRF/config logic (but don't crash if config fails)
         self.set_csrf_if_enabled()
-        # boolean flag to make sure the users have authenticated and the cookies are set
-        self.connected: bool = True
         # keep track of the the insights created from this connection
         self.open_insights: Set = set()
         self.cur_insight: str = self.make_new_insight()
@@ -115,33 +116,13 @@ class ServerClient:
         combined_enc = base64.b64encode(combined.encode("ascii"))
         headers = {"Authorization": f"Basic {combined_enc.decode('ascii')}"}
         self.auth_headers: Dict = headers.copy()
-        logger.info(self.auth_headers)
-        headers.update({"disableRedirect": "true"})
 
-        # authentication url
-        api_url = "/auth/whoami"
-        url = self.main_url + api_url
+        # make sure user is authenticated
+        response, is_logged_in = self.is_session_login(self.auth_headers)
+        if not is_logged_in:
+            raise AuthenticationError("User could not successfully login")
 
-        self.r = requests.get(url, headers=headers)
-
-        self.r.raise_for_status()
-
-        # display the login response
-        json_response = self.r.json()
-
-        logger.info(json_response)
-
-        if "errorMessage" in json_response:
-            if json_response["errorMessage"] == "null principal":
-                raise AuthenticationError(
-                    url
-                    + f" USERID = INVALID could not login using user with access key '{self.access_key}' and secret key"
-                )
-
-            raise AuthenticationError(json_response["errorMessage"])
-
-        self.cookies = self.r.cookies
-
+        self.cookies = response.cookies
         # display the cookies
         logger.info(self.cookies)
 
@@ -157,31 +138,77 @@ class ServerClient:
         }
         self.auth_headers: Dict = headers.copy()
 
-        self.r = requests.get(url=self.main_url + "/auth/whoami", headers=headers)
+        # make sure user is authenticated
+        response, is_logged_in = self.is_session_login(self.auth_headers)
+        if not is_logged_in:
+            raise AuthenticationError("User could not successfully login")
 
-        self.r.raise_for_status()
-
-        # display the login response
-        json_response = self.r.json()
-
-        logger.info(json_response)
-
-        if "errorMessage" in json_response:
-            if json_response["errorMessage"] == "null principal":
-                raise AuthenticationError(
-                    self.main_url
-                    + "/auth/whoami"
-                    + f" USERID = INVALID could not login using user with bearer token '{self.bearer_token}'"
-                )
-
-            raise AuthenticationError(json_response["errorMessage"])
-
-        self.cookies = self.r.cookies
-
+        self.cookies = response.cookies
         # display the cookies
         logger.info(self.cookies)
 
+    def reconnect(self):
+        self.logout()
+        # Call __init__ to reconnect to the server on session timeout
+        self.__init__(
+            self.main_url,
+            self.access_key,
+            self.secret_key,
+            self.bearer_token,
+            self.bearer_token_provider,
+        )
+
+    def is_session_login(
+        self, headers: Optional[Dict[str, str]] = None
+    ) -> Tuple[Optional[requests.Response], bool]:
+        """
+        Check if user is logged in and return both the response and login status.
+
+        Args:
+            headers: Optional dictionary of HTTP headers to include in the request
+
+        Returns:
+            Tuple[Optional[Response], bool]: (response_object, is_logged_in)
+        """
+        config_url = self.main_url + "/config"
+        try:
+            response = requests.get(
+                config_url, cookies=getattr(self, "cookies", None), headers=headers
+            )
+            response.raise_for_status()
+            config_data = response.json()
+            loginDetails = config_data.get("loginDetails")
+            if loginDetails:
+                return response, True
+            else:
+                return response, False
+        except Exception as e:
+            logger.error(f"Could not determine if user is logged in. Error: {str(e)}")
+            return None, False
+
     def set_csrf_if_enabled(self):
+        """
+        Conditionally sets CSRF token for API requests based on server configuration.
+
+        This method checks if CSRF protection is enabled on the server by fetching
+        the configuration endpoint. If CSRF is enabled, it retrieves a CSRF token
+        and adds it to the required headers for subsequent requests.
+
+        The method performs the following steps:
+        1. Fetches the server configuration from /config endpoint
+        2. Checks if CSRF protection is enabled in the configuration
+        3. If enabled, requests a CSRF token from /config/fetchCsrf endpoint
+        4. Extracts the token from response headers and adds it to required_headers
+
+        Attributes Modified:
+            self.required_headers (dict): Updated with X-Csrf-Token header if CSRF is enabled
+
+        Raises:
+            requests.exceptions.HTTPError: If any HTTP request fails (status code >= 400)
+            requests.exceptions.RequestException: For network-related errors
+            ValueError: If the server response contains invalid JSON
+            KeyError: If expected configuration keys are missing
+        """
         config_url = self.main_url + "/config"
         try:
             resp = requests.get(config_url, cookies=getattr(self, "cookies", None))
@@ -210,9 +237,7 @@ class ServerClient:
                 logger.info("CSRF not enabled; continuing without CSRF header.")
         except Exception as e:
             logger.error(f"Could not fetch or parse config for csrf. Error: {str(e)}")
-            # No crash - just leave required_headers clear
 
-    # TODO add dec
     def get_auth_headers(self) -> Dict:
         """Get the autheroization headers used to authenticate the user"""
         return self.auth_headers
@@ -225,7 +250,8 @@ class ServerClient:
         """
         Create a new insight (temporal space) to operate within the ai-server at set it as the current insight.
         """
-        if not self.connected:
+        _, is_logged_in = self.is_session_login()
+        if not is_logged_in:
             return "Please login"
 
         response = requests.post(
@@ -268,7 +294,8 @@ class ServerClient:
         Returns:
             `Union[Any, Dict]`: The output object from the runPixel response or the entire runPixel response.
         """
-        if not self.connected:
+        _, is_logged_in = self.is_session_login()
+        if not is_logged_in:
             return "Please login"
 
         if insight_id is None:
@@ -315,7 +342,8 @@ class ServerClient:
         Returns:
             `Union[Any, Dict]`: The output object from the runPixelAsync containing the jobId
         """
-        if not self.connected:
+        _, is_logged_in = self.is_session_login()
+        if not is_logged_in:
             return "Please login"
 
         if insight_id is None:
@@ -400,9 +428,7 @@ class ServerClient:
     def logout(self) -> None:
         """Closes the connection to the server."""
         requests.get(self.main_url + "/logout/all", cookies=self.cookies)
-
         self.cookies = None  # reset the connection attributes for the class
-        self.connected = False  # reset the connection attributes for the class
 
     def send_request(self, payload_struct: Dict) -> None:
         """
@@ -520,19 +546,20 @@ class ServerClient:
         Args:
             files (`List[str]`):
                 List of file paths to upload from local device
-            insight_id (`str`):
+            insight_id (Optional[`str`]):
                 Unique identifier for the temporal worksapce where actions are being isolated
-            project_id (`bool`):
+            project_id (Optional[`str`]):
                 Given project/app unique identifier
-            path (`str`):
+            path (Optional[`str`]):
                 Specific upload path
 
         Returns (`List[str]`):
             List of file names that have been successfully uploaded
-
         """
-        # .../Monolith/api/uploadFile/baseUpload?insightId=de43ce0d-db2e-4ab9-a807-336bb86c4ea0&projectId=4c14bc58-973f-4293-87ed-a5d32c24f418&path=version/assets/
+        if not files:
+            raise Exception("Must provide atleast one file to upload")
 
+        # .../Monolith/api/uploadFile/baseUpload?insightId=de43ce0d-db2e-4ab9-a807-336bb86c4ea0&projectId=4c14bc58-973f-4293-87ed-a5d32c24f418&path=version/assets/
         if isinstance(files, str):
             files = [files]
 
@@ -559,15 +586,15 @@ class ServerClient:
 
         param = f"?{param}"
 
-        url = f"{self.main_url}/uploadFile/baseUpload{param}"
+        upload_post_request = f"{self.main_url}/uploadFile/baseUpload{param}"
 
-        logger.info("The upload url is " + url)
+        logger.info("The upload url is " + upload_post_request)
 
         insight_file_paths = []
         for filepath in files:
             with open(filepath, "rb") as fobj:
                 response = requests.post(
-                    url,
+                    upload_post_request,
                     cookies=self.cookies,
                     files={"file": fobj},
                     headers=self.required_headers,
@@ -575,6 +602,112 @@ class ServerClient:
                 insight_file_paths.append(response.json()[0]["fileName"])
 
         return insight_file_paths
+
+    def download_file(
+        self,
+        file: str,
+        project_id: Optional[str] = None,
+        insight_id: Optional[str] = None,
+        custom_filename: str = None,
+    ) -> str:
+        """
+        Download files from the server to the local device.
+
+        Args:
+            file (`str`):
+                The file path on the server to download
+            insight_id (Optional[`str`]):
+                Unique identifier for the temporal worksapce where actions are being isolated
+            project_id (Optional[`str`]):
+                Given project/app unique identifier
+            custom_filename (Optional[`str`]):
+                A custom filename for the download
+
+        Returns (`str`):
+            The file name that was downloaded
+        """
+        if not file:
+            raise Exception("Must provide a file to download")
+
+        # Construct the pixel statement
+        project_param = ""
+        if project_id is not None and project_id != "":
+            project_param = ",space=[{project_id}]"
+
+        download_asset_pixel = f"DownloadAsset(filePath=['{file}']{project_param})"
+        download_file_key = self.run_pixel(
+            payload=download_asset_pixel, insight_id=insight_id
+        )
+
+        insight_param = ""
+        if insight_id:
+            insight_param = insight_id
+        else:
+            insight_param = self.cur_insight
+
+        download_get_url = f"{self.main_url}/engine/downloadFile?insightId={insight_param}&fileKey={download_file_key}"
+
+        # Make the GET request
+        response = requests.get(download_get_url, cookies=self.cookies, stream=True)
+        response.raise_for_status()
+
+        # Determine filename
+        if custom_filename:
+            filename = custom_filename
+        else:
+            filename = get_filename_from_url(
+                download_get_url, response.headers, Path(file).name
+            )
+
+        # Get unique filename to avoid overwriting
+        unique_filename = get_unique_filename(filename)
+
+        # Download and save the file
+        with open(unique_filename, "wb") as file:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:  # Filter out keep-alive chunks
+                    file.write(chunk)
+
+        logger.info(f"File downloaded successfully: {unique_filename}")
+        return unique_filename
+
+
+def get_filename_from_url(url, headers=None, default_name=None):
+    """Extract filename from URL or Content-Disposition header"""
+    # First try to get filename from Content-Disposition header
+    if headers and "Content-Disposition" in headers:
+        content_disp = headers["Content-Disposition"]
+        if "filename=" in content_disp:
+            filename = content_disp.split("filename=")[1].strip("\"'")
+            return unquote(filename)
+
+    # Fall back to extracting from URL
+    parsed_url = urlparse(url)
+    filename = os.path.basename(parsed_url.path)
+
+    # If no filename in path, use a default
+    if not filename or "." not in filename:
+        filename = default_name
+
+    return unquote(filename)
+
+
+def get_unique_filename(filename):
+    """Generate a unique filename by appending (2), (3), etc. if file exists"""
+    if not os.path.exists(filename):
+        return filename
+
+    # Split filename and extension
+    path = Path(filename)
+    name = path.stem
+    suffix = path.suffix
+
+    counter = 2
+    while True:
+        new_filename = f"{name} ({counter}){suffix}"
+        if not os.path.exists(new_filename):
+            return new_filename
+        counter += 1
 
 
 class AuthenticationError(Exception):

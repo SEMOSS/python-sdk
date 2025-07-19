@@ -202,7 +202,6 @@ server_connection.run_pixel('1+1')
 server_connection.run_pixel('1+1', full_response=True)
 # example output
 # {'insightID': '8b419eaf-df7d-4a7f-869e-8d7d59bbfde8',
-# 'sessionTimeRemaining': '7196',
 # 'pixelReturn': [{'pixelId': '3',
 #   'pixelExpression': '1 + 1 ;',
 #   'isMeta': False,
@@ -210,7 +209,7 @@ server_connection.run_pixel('1+1', full_response=True)
 #   'operationType': ['OPERATION']}]}
 ```
 
-### Upload files to an Insight
+### Upload / Download files to an Insight
 
 ```python
 from ai_server import ServerClient
@@ -222,6 +221,8 @@ loginKeys = {"secretKey":"<your_secret_key>","accessKey":"<your_access_key>"}
 server_connection = ServerClient(access_key=loginKeys['accessKey'], secret_key=loginKeys['secretKey'], base='<Your deployed server Monolith URL>')
 
 server_connection.upload_files(files=["path_to_local_file1", "path_to_local_file2"], project_id="your_project_id", insight_id="your_insight_id", path="path_to_upload_files_in_insight")
+
+server_connection.download_file(file=["path_to_insight_file"], project_id="your_project_id", insight_id="your_insight_id",custom_filename="filename_for_download")
 ```
 
 ### Using tools via langchain
