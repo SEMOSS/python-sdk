@@ -76,7 +76,7 @@ class DatabaseEngine(ServerProxy):
             if isinstance(fileLoc, dict) and len(fileLoc) > 0:
                 return fileLoc
             else:
-                return open(fileLoc, "r").read()
+                return open(fileLoc, "r", encoding="utf-8").read()
 
     def insertData(
         self, query: str, insight_id: Optional[str] = None, commit: bool = True

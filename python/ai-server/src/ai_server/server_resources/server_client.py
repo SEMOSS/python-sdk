@@ -113,8 +113,8 @@ class ServerClient:
         Store the cookies to be used for other api calls after authentication
         """
         combined = self.access_key + ":" + self.secret_key
-        combined_enc = base64.b64encode(combined.encode("ascii"))
-        headers = {"Authorization": f"Basic {combined_enc.decode('ascii')}"}
+        combined_enc = base64.b64encode(combined.encode("utf-8"))
+        headers = {"Authorization": f"Basic {combined_enc.decode('utf-8')}"}
         self.auth_headers: Dict = headers.copy()
 
         # make sure user is authenticated
@@ -305,12 +305,14 @@ class ServerClient:
                 insight_id = self.cur_insight
 
         pixel_payload = {"expression": payload, "insightId": insight_id}
+        headers = self.required_headers.copy()
+        headers["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8"
 
         response = requests.post(
             self.main_url + "/engine/runPixel",
             cookies=self.cookies,
             data=pixel_payload,
-            headers=self.required_headers,
+            headers=headers,
         )
 
         response_dict = response.json()
@@ -353,12 +355,14 @@ class ServerClient:
                 insight_id = self.cur_insight
 
         pixel_payload = {"expression": payload, "insightId": insight_id}
+        headers = self.required_headers.copy()
+        headers["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8"
 
         response = requests.post(
             self.main_url + "/engine/runPixelAsync",
             cookies=self.cookies,
             data=pixel_payload,
-            headers=self.required_headers,
+            headers=headers,
         )
 
         response_dict = response.json()
@@ -445,7 +449,7 @@ class ServerClient:
         # but I dont want to bother the server proxy and leave it as is
         epoc = payload_struct["epoc"]
 
-        input_payload_message = json.dumps(payload_struct)
+        input_payload_message = json.dumps(payload_struct, ensure_ascii=False)
 
         logger.info("Sending a PayloadStruct " + input_payload_message)
 

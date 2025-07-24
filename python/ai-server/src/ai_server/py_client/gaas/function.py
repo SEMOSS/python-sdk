@@ -36,7 +36,7 @@ class FunctionEngine(ServerProxy):
         if insight_id is None:
             insight_id = self.insight_id
 
-        pixel = f'ExecuteFunctionEngine(engine = "{self.engine_id}", map=[{json.dumps(parameterMap)}]);'
+        pixel = f'ExecuteFunctionEngine(engine = "{self.engine_id}", map=[{json.dumps(parameterMap, ensure_ascii=False)}]);'
 
         output_payload_message = self.server.run_pixel(
             payload=pixel, insight_id=insight_id, full_response=True
