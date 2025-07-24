@@ -52,7 +52,7 @@ class ModelEngine(ServerProxy):
             f',context=["<encode>{context}</encode>"]' if (context is not None) else ""
         )
         optionalParamDict = (
-            f",paramValues=[{json.dumps(param_dict)}]"
+            f",paramValues=[{json.dumps(param_dict, ensure_ascii=False)}]"
             if (param_dict is not None)
             else ""
         )
@@ -108,7 +108,7 @@ class ModelEngine(ServerProxy):
             f',context=["<encode>{context}</encode>"]' if (context is not None) else ""
         )
         optionalParamDict = (
-            f",paramValues=[{json.dumps(param_dict)}]"
+            f",paramValues=[{json.dumps(param_dict, ensure_ascii=False)}]"
             if (param_dict is not None)
             else ""
         )
@@ -156,7 +156,7 @@ class ModelEngine(ServerProxy):
         assert self.server is not None
 
         optionalParamDict = (
-            f",paramValues=[{json.dumps(param_dict)}]"
+            f",paramValues=[{json.dumps(param_dict, ensure_ascii=False)}]"
             if (param_dict is not None)
             else ""
         )

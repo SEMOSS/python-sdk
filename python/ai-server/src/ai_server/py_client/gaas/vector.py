@@ -55,12 +55,12 @@ class VectorEngine(ServerProxy):
         )
 
         optionalParams = (
-            f",paramValues=[{json.dumps(param_dict)}]"
+            f",paramValues=[{json.dumps(param_dict, ensure_ascii=False)}]"
             if param_dict is not None and len(param_dict) > 0
             else ""
         )
 
-        pixel = f'CreateEmbeddingsFromDocuments(engine="{self.engine_id}",filePaths={json.dumps(insight_files)}{optionalParams});'
+        pixel = f'CreateEmbeddingsFromDocuments(engine="{self.engine_id}",filePaths={json.dumps(insight_files, ensure_ascii=False)}{optionalParams});'
 
         output_payload_message = self.server.run_pixel(
             payload=pixel, insight_id=insight_id, full_response=True
@@ -103,7 +103,7 @@ class VectorEngine(ServerProxy):
         )
 
         optionalParams = (
-            f",paramValues=[{json.dumps(param_dict)}]"
+            f",paramValues=[{json.dumps(param_dict, ensure_ascii=False)}]"
             if param_dict is not None and len(param_dict) > 0
             else ""
         )
@@ -151,7 +151,7 @@ class VectorEngine(ServerProxy):
         )
 
         optionalParams = (
-            f",paramValues=[{json.dumps(param_dict)}]"
+            f",paramValues=[{json.dumps(param_dict, ensure_ascii=False)}]"
             if param_dict is not None and len(param_dict) > 0
             else ""
         )
@@ -272,7 +272,7 @@ class VectorEngine(ServerProxy):
         pixel += optional_filters + optional_meta_filters
 
         if len(param_dict) != 0:
-            pixel += ", paramValues = " + json.dumps(param_dict)
+            pixel += ", paramValues = " + json.dumps(param_dict, ensure_ascii=False)
 
         pixel += ");"
 
@@ -307,7 +307,7 @@ class VectorEngine(ServerProxy):
             insight_id = self.insight_id
 
         optionalParams = (
-            f",paramValues=[{json.dumps(param_dict)}]"
+            f",paramValues=[{json.dumps(param_dict, ensure_ascii=False)}]"
             if param_dict is not None and len(param_dict) > 0
             else ""
         )
