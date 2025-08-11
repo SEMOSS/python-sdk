@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
 import json
 import logging
 from ai_server.server_resources.server_proxy import ServerProxy
@@ -27,7 +27,7 @@ class VectorEngine(ServerProxy):
         file_paths: List[str],
         param_dict: Optional[Dict] = {},
         insight_id: Optional[str] = None,
-    ) -> bool:
+    ) -> Union[bool, List[Dict]]:
         """Adds documents to the vector database.
 
         Args:
@@ -37,7 +37,8 @@ class VectorEngine(ServerProxy):
                         If None, the session's default insight_id is used.
 
         Returns:
-            True if the documents are added successfully, False otherwise.
+            Union[bool, List[Dict]]:  List of dicts with metadata around the state of uploading each document provided.
+                For legacy instances of the server, response might only be a boolean value True if the documents are added successfully, False otherwise.
 
         Raises:
             RuntimeError: If the server returns an error.
@@ -77,7 +78,7 @@ class VectorEngine(ServerProxy):
         space: Optional[str] = None,
         param_dict: Optional[Dict] = {},
         insight_id: Optional[str] = None,
-    ) -> bool:
+    ) -> Union[bool, List[Dict]]:
         """Adds documents from a vector CSV file to the vector database.
 
         Args:
@@ -89,7 +90,8 @@ class VectorEngine(ServerProxy):
                         If None, the session's default insight_id is used.
 
         Returns:
-            True if the documents are added successfully, False otherwise.
+            Union[bool, List[Dict]]:  List of dicts with metadata around the state of uploading each document provided.
+                For legacy instances of the server, response might only be a boolean value True if the documents are added successfully, False otherwise.
 
         Raises:
             RuntimeError: If the server returns an error.
