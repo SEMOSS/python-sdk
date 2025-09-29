@@ -108,28 +108,34 @@ class ModelEngine(ServerProxy):
 
     def stream_ask(
         self,
-        question: str,
+        command: Optional[str] = None,
+        question: Optional[str] = None,  # Deprecated
+        room_id: Optional[str] = None,
         context: Optional[str] = None,
-        use_history: Optional[bool] = True,  # To control the history
-        insight_id: Optional[str] = None,
+        image: Optional[List] = None,
+        url: Optional[List] = None,
+        use_history: Optional[bool] = True,
         param_dict: Optional[Dict] = None,
+        insight_id: Optional[str] = None,
     ) -> Generator:
         """Streams the response from a text-generation model.
 
         Args:
-            question: The question to ask the model.
-            context: Optional; Additional context to provide to the model.
-            use_history: Optional; If True, the model will use the conversation history.
-                         Defaults to True.
-            insight_id: Optional; The unique identifier for the temporal workspace.
-                        If None, the session's default insight_id is used.
-            param_dict: Optional; A dictionary of additional parameters for the model,
+            - command (str): The command to send to the model.
+            - question (str): **Deprecated**. Use `command` instead.
+            - room_id (Optional[str]): Identifier for the room/conversation. If not provided, one will be created on the Java side.
+            - context (Optional[str]): Context for the model (the system prompt).
+            - image (Optional[List]): List of base64 image data to provide to the model.
+            - url (Optional[List]): List of image URLs to provide to the model.
+            - use_history (Optional[bool]): Whether to provide the conversation history to the model on an individual call.
+            - param_dict (Optional[Dict]): A dictionary of additional parameters for the model,
                         such as temperature, max_new_tokens, etc.
                         *NOTE* you can pass in
                         param_dict = {"full_prompt":full_prompt, "temperature":temp, "max_new_tokens":max_token}
                         where full_prompt is the an multi faceted prompt construct before sending the payload
                         For OpenAI, this would be a list of dictionaris where the only keys within each dictionary are 'role' and 'content'
                         For TextGen, this could be a list simialr to OpenAI or a complete string that has all the pieces pre constructed
+            - insight_id (Optional[str]): Identifier for insights.
 
         Yields:
             A generator that yields the model's response in chunks.
@@ -140,18 +146,51 @@ class ModelEngine(ServerProxy):
         if insight_id is None:
             insight_id = self.insight_id
 
-        optionalContext = (
-            f',context=["<encode>{context}</encode>"]' if (context is not None) else ""
+        if question is not None:
+            warnings.warn(
+                "The 'question' parameter is deprecated and will be removed in a future version. "
+                "Please use 'command' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            if command is None:
+                command = question
+
+        command_param = (
+            f', command="<encode>{command}</encode>"' if (command is not None) else ""
         )
-        optionalParamDict = (
-            f",paramValues=[{json.dumps(param_dict, ensure_ascii=False)}]"
-            if (param_dict is not None)
+
+        if (
+            command_param == ""
+            and param_dict is not None
+            and not param_dict.get("full_prompt", None)
+        ):
+            raise ValueError("Either command or question must be provided")
+
+        optional_room_id_param = (
+            f', roomId="<encode>{room_id}</encode>"' if (room_id is not None) else ""
+        )
+        optional_context = (
+            f', context=["<encode>{context}</encode>"]' if (context is not None) else ""
+        )
+        if param_dict is not None:
+            param_dict["stream"] = True
+        else:
+            param_dict = {"stream": True}
+
+        optional_param_dict = (
+            f", paramValues=[{json.dumps(param_dict, ensure_ascii=False)}]"
+        )
+
+        optional_image_param = f",image={image}" if (image is not None) else ""
+        optional_url_param = f",url={url}" if (url is not None) else ""
+        optional_use_history_param = (
+            f", useHistory={str(use_history).lower()}"
+            if (use_history is not None)
             else ""
         )
 
-        use_history_param = str(use_history).lower()
-
-        pixel = f'LLM(engine="{self.engine_id}", command="<encode>{question}</encode>", useHistory={use_history_param}{optionalContext}{optionalParamDict});'
+        pixel = f'LLM(engine="{self.engine_id}"{command_param}{optional_context}{optional_use_history_param}{optional_param_dict}{optional_room_id_param}{optional_image_param}{optional_url_param});'
 
         for message in self.server.get_partial_responses(
             self.server.run_pixel_async(payload=pixel, insight_id=insight_id)
