@@ -49,15 +49,16 @@ from ai_server import ModelEngine
 model = ModelEngine(engine_id="2c6de0ff-62e0-4dd0-8380-782ac4d40245", insight_id=server_connection.cur_insight)
 
 # if your model is for text-generation, ask a question
-model.ask(question = 'What is the capital of France?')
+model.ask(command = 'What is the capital of France?')
 # example output
 # {'response': 'The capital of France is Paris.',
 #  'messageId': '0a80c2ce-76f9-4466-b2a2-8455e4cab34a',
+#  'messageType': 'CHAT',
 #  'roomId': '28261853-0e41-49b0-8a50-df34e8c62a19',
 #  'numberOfTokensInResponse': 6, 'numberOfTokensInPrompt': 6}
 
 # stream the response
-for chunk in model.stream_ask(question=question):
+for chunk in model.stream_ask(command=command):
     print(chunk, end="", flush=True)
 
 # instantiate a different model for embeddings, get embeddings for some text
@@ -67,16 +68,16 @@ model.embeddings(strings_to_embed=['text1','text2'])
 # {'response': [[0.007663827, -0.030877046, ... -0.035327386]],
 #  'numberOfTokensInPrompt': 8, 'numberOfTokensInResponse': 0}
 
-# integrate with langchain
+# Integrate with langchain
 model = ModelEngine(engine_id="2c6de0ff-62e0-4dd0-8380-782ac4d40245", insight_id=server_connection.cur_insight)
 langchain_llm = model.to_langchain_chat_model()
-question = 'what is the capital of france?'
-output = langchain_llm.invoke(input = question)
+command = 'What is the capital of France?'
+output = langchain_llm.invoke(input = command)
 # example output
 # AIMessage(content='The capital of France is Paris.', additional_kwargs={}, response_metadata={'numberOfTokensInResponse': 6, 'numberOfTokensInPrompt': 6, 'messageType': 'CHAT', 'messageId': 'bd4f54fe-fd9b-4538-8531-696c4cdae01f', 'roomId': '57c03aae-5c10-498e-9a25-027201daa917'}, id='run-e9672e53-0cfd-4cb6-b9e4-3d5304314f73-0')
 
 # stream the response
-for chunk in langchain_llm.stream(question):
+for chunk in langchain_llm.stream(command):
     print(chunk.content, end="", flush=True)
 
 ```
