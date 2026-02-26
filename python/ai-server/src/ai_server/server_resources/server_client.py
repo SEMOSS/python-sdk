@@ -116,6 +116,8 @@ class ServerClient:
         combined_enc = base64.b64encode(combined.encode("utf-8"))
         headers = {"Authorization": f"Basic {combined_enc.decode('utf-8')}"}
         self.auth_headers: Dict = headers.copy()
+        # combine the auth header with required headers for any csrf
+        self.required_headers.update(self.auth_headers)
 
         # make sure user is authenticated
         response, is_logged_in = self.is_session_login(self.auth_headers)
@@ -137,6 +139,8 @@ class ServerClient:
             "Bearer-Provider": self.bearer_token_provider,
         }
         self.auth_headers: Dict = headers.copy()
+        # combine the auth header with required headers for any csrf
+        self.required_headers.update(self.auth_headers)
 
         # make sure user is authenticated
         response, is_logged_in = self.is_session_login(self.auth_headers)
@@ -258,7 +262,7 @@ class ServerClient:
             self.main_url + "/engine/runPixel",
             cookies=self.cookies,
             data={"expression": "META | true", "insightId": "new"},
-            headers=self.required_headers,
+            headers=self.required_headers.copy(),
         )
 
         # raise HTTP error if one occurs
@@ -394,7 +398,7 @@ class ServerClient:
                 url=self.main_url + "/engine/partial",
                 cookies=self.cookies,
                 data={"jobId": job_id},
-                headers=self.required_headers,
+                headers=self.required_headers.copy(),
             ).json()
 
             msg = response.get("message", {})
@@ -527,7 +531,9 @@ class ServerClient:
         )
 
         dataProductUrl = base_url + sql
-        response = requests.get(dataProductUrl, cookies=self.cookies).json()
+        response = requests.get(
+            dataProductUrl, cookies=self.cookies, headers=self.required_headers.copy()
+        ).json()
 
         try:
             return pd.DataFrame(response["dataArray"], columns=response["columns"])
@@ -601,7 +607,7 @@ class ServerClient:
                     upload_post_request,
                     cookies=self.cookies,
                     files={"file": fobj},
-                    headers=self.required_headers,
+                    headers=self.required_headers.copy(),
                 )
                 insight_file_paths.append(response.json()[0]["fileName"])
 
@@ -652,7 +658,12 @@ class ServerClient:
         download_get_url = f"{self.main_url}/engine/downloadFile?insightId={insight_param}&fileKey={download_file_key}"
 
         # Make the GET request
-        response = requests.get(download_get_url, cookies=self.cookies, stream=True)
+        response = requests.get(
+            download_get_url,
+            cookies=self.cookies,
+            headers=self.required_headers.copy(),
+            stream=True,
+        )
         response.raise_for_status()
 
         # Determine filename
