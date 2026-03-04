@@ -83,6 +83,10 @@ class ServerClient:
                 "Must provide either access_key and secret_key for user access login or provide bearer_token and bearer_token_provider for login using your IdP access key"
             )
 
+
+        # This will hold CSRF and any other required headers (merge into all calls)
+        self.required_headers = {}
+
         # TODO provide definitons for all of these attributes
         # used to keep track of the authorization header after the user has authenticated
         self.auth_headers: Dict = {}
@@ -90,9 +94,6 @@ class ServerClient:
             self.loginUserAccessKey()
         else:
             self.loginBearerToken()
-
-        # This will hold CSRF and any other required headers (merge into all calls)
-        self.required_headers = {}
 
         # Perform CSRF/config logic (but don't crash if config fails)
         self.set_csrf_if_enabled()
