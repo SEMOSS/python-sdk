@@ -6,7 +6,7 @@ from importlib import metadata
 try:
     __version__ = metadata.version(__package__)
 except metadata.PackageNotFoundError:
-    __version__ = "0.0.29"
+    __version__ = "0.0.30"
 del metadata
 
 from .server_resources.server_client import ServerClient
