@@ -91,8 +91,11 @@ from ai_server import VectorEngine
 # initialize the connection to the vector database
 vectorEngine = VectorEngine(engine_id="221a50a4-060c-4aa8-8b7c-e2bc97ee3396", insight_id=server_connection.cur_insight)
 
-# Add document(s) that have been uploaded to the insight
+# Add document(s). Upload transport remains one file per request by default.
 vectorEngine.addDocument(file_paths = ['fileName1.pdf', 'fileName2.pdf', ..., 'fileNameX.pdf'])
+
+# Opt in to repeated multipart file parts when the server supports batched uploads.
+vectorEngine.addDocument(file_paths = ['fileName1.pdf', 'fileName2.pdf', ..., 'fileNameX.pdf'], upload_batch_size = 4)
 
 # Add Vector CSV File document(s) that have been uploaded to the insight
 vectorEngine.addVectorCSVFile(file_paths = ['fileName1.csv', 'fileName2csv', ..., 'fileNameX.csv'])
@@ -222,6 +225,9 @@ loginKeys = {"secretKey":"<your_secret_key>","accessKey":"<your_access_key>"}
 server_connection = ServerClient(access_key=loginKeys['accessKey'], secret_key=loginKeys['secretKey'], base='<Your deployed server Monolith URL>')
 
 server_connection.upload_files(files=["path_to_local_file1", "path_to_local_file2"], project_id="your_project_id", insight_id="your_insight_id", path="path_to_upload_files_in_insight")
+
+# Opt in to four files per multipart request. The default batch_size is one.
+server_connection.upload_files(files=["path_to_local_file1", "path_to_local_file2"], insight_id="your_insight_id", batch_size=4)
 
 server_connection.download_file(file=["path_to_insight_file"], project_id="your_project_id", insight_id="your_insight_id",custom_filename="filename_for_download")
 ```
