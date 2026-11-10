@@ -6,7 +6,7 @@ _ai-server-sdk_ is a python client SDK to connect to the AI Server
 
 - Inference with Models you have acces to within the server
 - Create Pandas DataFrame from Databases connections
-- Pull Storage objects
+- Push files to, and pull files from, Storage engines
 - Run pixel and get the direct output or full json response.
 - Pull data products from an existing insight using REST API.
 
@@ -152,6 +152,78 @@ langhchain_db.executeQuery(query = 'SELECT * FROM table_name')
 langhchain_db.insertQuery(query = 'INSERT INTO table_name (column1, column2, column3, ...) VALUES (value1, value2, value3, ...)')
 langhchain_db.updateQuery(query = 'UPDATE table_name set column1=value1 WHERE condition')
 langhchain_db.removeQuery(query = 'DELETE FROM table_name WHERE condition')
+```
+
+### Move files in and out of Storage engines
+
+```python
+# import the storage engine class for the ai_server package
+from ai_server import StorageEngine
+
+storage = StorageEngine(engine_id="68b7e856-2312-4106-ab7a-7d7bb006173a", insight_id=server_connection.cur_insight)
+
+# list the root of the engine
+storage.list(storagePath="/")
+# example output
+# ['reports/', 'college.csv']
+
+# the same listing with details on each entry
+storage.listDetails(storagePath="/reports")
+# example output
+# [{'Path': '/reports/q1.csv', 'Name': 'q1.csv', 'Size': 51049, 'MimeType': 'text/csv',
+#   'ModTime': '2026-07-17T20:54:33.767Z', 'IsDir': False, 'Metadata': {'author': 'me'}}]
+```
+
+Paths are always relative to the root of the engine, and the `Path` on a listing entry can be handed straight back to any other method. Azure is the one engine where the root is the account rather than a single container, so its paths start with the container name, for example `mycontainer/reports/q1.csv`. Listing `/` there shows the containers you can reach.
+
+```python
+# copy one file, or a folder, up to storage
+storage.copyToStorage(storagePath="/reports", localPath="/local/path/q1.csv", metadata={"author": "me"})
+
+# and back down again
+storage.copyToLocal(storagePath="/reports/q1.csv", localPath="/local/path")
+
+# sync a whole local folder up, skipping files that are already there and unchanged
+result = storage.syncLocalToStorage(storagePath="/reports", localPath="/local/reports")
+# example output
+# {'storagePath': 'reports', 'status': 'SUCCESS',
+#  'uploadedFiles': ['reports/q1.csv'], 'skippedFiles': ['reports/q2.csv'], 'failedFiles': []}
+```
+
+`syncLocalToStorage` returns the outcome of the sync. A sync where some files failed comes back with a `status` of `PARTIAL` and the names in `failedFiles` **without raising**, so check the status to know that every file arrived:
+
+```python
+if result["status"] != "SUCCESS":
+    print(f"{len(result['failedFiles'])} files did not make it: {result['failedFiles']}")
+```
+
+Engines that hand the whole transfer off in one call cannot name individual files, and report `SUCCESS` with empty lists. An empty `uploadedFiles` means "not reported", not "nothing uploaded".
+
+```python
+# pull a whole folder down
+storage.syncStorageToLocal(storagePath="/reports", localPath="/local/reports")
+
+# read a file without writing it to the insight workspace first
+storage.getFileAsBase64(storagePath="/reports/q1.csv")
+
+# replace the metadata on a file already in storage. This overwrites rather than
+# merges, so pass every key the file should end up with
+storage.updateFileMetadata(storagePath="/reports/q1.csv", metadata={"author": "someone else"})
+
+# delete a file or a folder. leaveFolderStructure keeps the folder itself visible
+storage.deleteFromStorage(storagePath="/reports/q1.csv")
+storage.deleteFromStorage(storagePath="/reports", leaveFolderStructure=True)
+```
+
+On engines that keep versions (S3 style, with bucket versioning turned on) you can list them and pull a specific one:
+
+```python
+versions = storage.listVersions(storagePath="/reports/q1.csv")
+# example output
+# [{'versionId': 'CvV6ZQ...', 'lastModified': '2026-07-17T20:54:33.767Z',
+#   'size': 51049, 'isLatest': True, 'key': 'reports/q1.csv'}]
+
+storage.copyToLocal(storagePath="/reports/q1.csv", localPath="/local/path", version=versions[1]["versionId"])
 ```
 
 ### Run Function Engines
