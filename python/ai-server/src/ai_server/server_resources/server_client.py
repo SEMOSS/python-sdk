@@ -6,6 +6,7 @@ import base64
 import logging
 from urllib.parse import urlparse, unquote
 from pathlib import Path
+from contextlib import ExitStack
 import os
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -550,6 +551,7 @@ class ServerClient:
         project_id: Optional[str] = None,
         insight_id: Optional[str] = None,
         path: Optional[str] = None,
+        batch_size: int = 1,
     ) -> List[str]:
         """
         Uploads files from the local device to the server.
@@ -563,22 +565,37 @@ class ServerClient:
                 Given project/app unique identifier
             path (Optional[`str`]):
                 Specific upload path
+            batch_size (`int`):
+                Number of files to include in each multipart request. Defaults to one for
+                backward compatibility.
 
         Returns (`List[str]`):
             List of file names that have been successfully uploaded
         """
-        if not files:
-            raise Exception("Must provide atleast one file to upload")
-
-        # .../Monolith/api/uploadFile/baseUpload?insightId=de43ce0d-db2e-4ab9-a807-336bb86c4ea0&projectId=4c14bc58-973f-4293-87ed-a5d32c24f418&path=version/assets/
         if isinstance(files, str):
             files = [files]
+        if not files:
+            raise ValueError("Must provide at least one file to upload")
+        if isinstance(batch_size, bool) or not isinstance(batch_size, int) or batch_size < 1:
+            raise ValueError("batch_size must be a positive integer")
+
+        validated_files = []
+        for filepath in files:
+            try:
+                normalized = os.fspath(filepath)
+            except TypeError as error:
+                raise TypeError("Every upload file must be a path-like value") from error
+            if not Path(normalized).is_file():
+                raise FileNotFoundError(f"Upload file does not exist or is not a file: {normalized}")
+            validated_files.append(normalized)
+
+        # .../Monolith/api/uploadFile/baseUpload?insightId=de43ce0d-db2e-4ab9-a807-336bb86c4ea0&projectId=4c14bc58-973f-4293-87ed-a5d32c24f418&path=version/assets/
 
         param = ""
         path = path or ""
 
         if insight_id or project_id or path:
-            if insight_id == None:
+            if insight_id is None:
                 insight_id = self.cur_insight
 
             param += f"insightId={insight_id}"
@@ -602,15 +619,32 @@ class ServerClient:
         logger.info("The upload url is " + upload_post_request)
 
         insight_file_paths = []
-        for filepath in files:
-            with open(filepath, "rb") as fobj:
+        for start in range(0, len(validated_files), batch_size):
+            group = validated_files[start : start + batch_size]
+            with ExitStack() as stack:
+                multipart_files = [
+                    ("file", stack.enter_context(open(filepath, "rb"))) for filepath in group
+                ]
                 response = requests.post(
                     upload_post_request,
                     cookies=self.cookies,
-                    files={"file": fobj},
+                    files=multipart_files,
                     headers=self.required_headers.copy(),
                 )
-                insight_file_paths.append(response.json()[0]["fileName"])
+                response.raise_for_status()
+                payload = response.json()
+                if not isinstance(payload, list) or len(payload) != len(group):
+                    raise ValueError(
+                        "Upload response must be an ordered list matching the submitted file count"
+                    )
+                for index, item in enumerate(payload):
+                    if (
+                        not isinstance(item, dict)
+                        or not isinstance(item.get("fileName"), str)
+                        or not item["fileName"]
+                    ):
+                        raise ValueError(f"Upload response item {index} has no valid fileName")
+                    insight_file_paths.append(item["fileName"])
 
         return insight_file_paths
 

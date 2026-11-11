@@ -27,6 +27,7 @@ class VectorEngine(ServerProxy):
         file_paths: List[str],
         param_dict: Optional[Dict] = {},
         insight_id: Optional[str] = None,
+        upload_batch_size: int = 1,
     ) -> Union[bool, List[Dict]]:
         """Adds documents to the vector database.
 
@@ -35,6 +36,8 @@ class VectorEngine(ServerProxy):
             param_dict: Optional; A dictionary of additional parameters for processing the documents.
             insight_id: Optional; The unique identifier for the temporal workspace.
                         If None, the session's default insight_id is used.
+            upload_batch_size: Optional; Number of files sent in each multipart upload request.
+                               Defaults to one for backward compatibility.
 
         Returns:
             Union[bool, List[Dict]]:  List of dicts with metadata around the state of uploading each document provided.
@@ -53,6 +56,7 @@ class VectorEngine(ServerProxy):
         insight_files = self.server.upload_files(
             files=file_paths,
             insight_id=insight_id,
+            batch_size=upload_batch_size,
         )
 
         optionalParams = (
